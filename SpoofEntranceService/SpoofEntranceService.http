@@ -1,0 +1,6 @@
+@SpoofEntranceService_HostAddress = http://localhost:5048
+
+GET {{SpoofEntranceService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
