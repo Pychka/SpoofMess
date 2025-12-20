@@ -1,0 +1,7 @@
+**/debug/
+**/release/
+**/bin/
+**/obj/
+SecurityLibraryTest/
+SecurityLibrary/
+.vs/
