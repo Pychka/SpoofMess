@@ -1,10 +1,10 @@
-﻿using CommonObjects.Requests;
+﻿using AdditionalHelpers;
+using CommonObjects.Requests;
 using CommonObjects.Results;
+using DataHelpers.Services;
 using Microsoft.EntityFrameworkCore;
 using SpoofEntranceService.Converters;
 using SpoofEntranceService.Models;
-using AdditionalHelpers;
-using DataHelpers.Services;
 using SpoofEntranceService.Services;
 
 namespace SpoofEntranceService.ServiceRealizations;
@@ -23,36 +23,65 @@ public class SessionService(
     private static readonly TimeSpan SessionExpiration = TimeSpan.FromMinutes(10);
     private static readonly TimeSpan UserEntryExpiration = TimeSpan.FromMinutes(10);
 
+    public static Result IsInvalidSession(SessionInfo? sessionInfo)
+    {
+        if (sessionInfo is null)
+            return Result.NotFoundResult($"Not found your session");
+
+        if (sessionInfo.IsDeleted || !sessionInfo.IsActive)
+            return Result.ErrorResult("Session is disabled or is deleted", 400);
+
+        return Result.SuccessResult();
+    }
+
+    public static bool IsSessionTooNew(SessionInfo sessionInfo, DateTime now) =>
+        sessionInfo.CreatedAt.Date >= now.AddDays(-7).Date;
+
+    private async ValueTask<SessionInfo?> GetSessionInfo(Guid sessionId) =>
+        await _repository.GetAsync(
+                $"{SESSION_KEY}{sessionId}",
+                async () => await _context.SessionInfos.FirstOrDefaultAsync(x => x.Id == sessionId),
+                SessionExpiration);
+    
+    private async Task ChangeState(SessionInfo sessionInfo) =>
+        await _repository.ChangeState(
+                _context,
+                $"{SESSION_KEY}{sessionInfo.Id}",
+                sessionInfo,
+                EntityState.Modified);
+
+    private async ValueTask<List<SessionInfo>?> GetSessionInfos(Guid sessionId, Guid userId)
+    {
+        return await _repository.GetAsync(
+                $"{USER_KEY}sessions:{userId}",
+                async () => await _context.SessionInfos
+                    .Where(x => x.UserEntryId == userId && x.IsActive && !x.IsDeleted && x.Id != sessionId).ToListAsync(),
+                UserEntryExpiration);
+    }
 
     public async Task<Result> EndSession(EndSessionRequest request, Guid sessionInfoId)
     {
         try
         {
-            SessionInfo? currentSessionInfo = await _repository.GetAsync(
-                $"{SESSION_KEY}{sessionInfoId}",
-                async () => await _context.SessionInfos.FirstOrDefaultAsync(x => !x.IsDeleted && x.Id == sessionInfoId),
-                SessionExpiration);
+            SessionInfo? currentSessionInfo = await GetSessionInfo(sessionInfoId);
+            Result result = IsInvalidSession(currentSessionInfo);
+            if(!result.Success)
+                return result;
 
-            if (currentSessionInfo is null
-                || currentSessionInfo.CreatedAt > DateTime.UtcNow.AddDays(-7))
+            if (IsSessionTooNew(currentSessionInfo!, DateTime.UtcNow))
                 return Result.ErrorResult("No trust", 403);
 
-            SessionInfo? deletedSessionInfo = await _repository.GetAsync(
-                $"{SESSION_KEY}{request.SessionId}",
-                async () => await _context.SessionInfos.FirstOrDefaultAsync(x => x.Id == request.SessionId),
-                SessionExpiration);
+            SessionInfo? deletedSessionInfo = await GetSessionInfo(request.SessionId);
 
-            if (deletedSessionInfo is null || deletedSessionInfo.IsDeleted || !deletedSessionInfo.IsActive)
-                return Result.NotFoundResult("Invalid session");
+            result = IsInvalidSession(deletedSessionInfo);
+            if (!result.Success)
+                return result;
 
-            deletedSessionInfo.IsActive = false;
+            deletedSessionInfo!.IsActive = false;
             deletedSessionInfo.IsDeleted = true;
 
-            await _repository.ChangeState(
-                _context,
-                $"{SESSION_KEY}{sessionInfoId}",
-                deletedSessionInfo,
-                EntityState.Modified);
+            await ChangeState(deletedSessionInfo);
+
             return Result.DeletedResult("Ok");
         }
         catch (Exception ex)
@@ -66,23 +95,17 @@ public class SessionService(
     {
         try
         {
+            SessionInfo? sessionInfo = await GetSessionInfo(sessionInfoId);
 
-            SessionInfo? sessionInfo = await _repository.GetAsync(
-                $"{SESSION_KEY}{sessionInfoId}",
-                async () => await _context.SessionInfos.FirstOrDefaultAsync(x => !x.IsDeleted && x.Id == sessionInfoId),
-                SessionExpiration);
+            Result result = IsInvalidSession(sessionInfo);
+            if (!result.Success)
+                return result;
 
-            if (sessionInfo is null)
-                return Result.NotFoundResult("Invalid session");
-
-            sessionInfo.IsActive = false;
+            sessionInfo!.IsActive = false;
             sessionInfo.IsDeleted = true;
 
-            await _repository.ChangeState(
-                _context,
-                $"{SESSION_KEY}{sessionInfo.Id}",
-                sessionInfo,
-                EntityState.Modified);
+            await ChangeState(sessionInfo);
+
             return Result.DeletedResult("Ok");
         }
         catch (Exception ex)
@@ -96,13 +119,7 @@ public class SessionService(
     {
         try
         {
-            List<SessionInfo>? sessions = await _repository.GetAsync(
-                $"{USER_KEY}sessions:{userId}",
-                async () =>
-                    await _context.SessionInfos
-                    .Where(x => !x.IsDeleted && x.IsActive && x.UserEntryId == userId && x.Id != sessionInfoId)
-                    .ToListAsync(),
-                UserEntryExpiration);
+            List<SessionInfo>? sessions = await GetSessionInfos(sessionInfoId, userId);
 
             if (sessions is null)
                 return Result<List<CommonObjects.DTO.SessionInfo>>.NotFoundResult("Invalid id");
@@ -123,12 +140,8 @@ public class SessionService(
             sessionInfo.IsActive = true;
             sessionInfo.UserEntry = userEntry;
 
-            await _repository.ChangeState(
-                _context,
-                $"{SESSION_KEY}{sessionInfo.Id}",
-                sessionInfo,
-                EntityState.Modified,
-                SessionExpiration);
+            await ChangeState(sessionInfo);
+
             return Result.SuccessResult("Ok");
         }
         catch (Exception ex)
@@ -142,21 +155,21 @@ public class SessionService(
     {
         try
         {
-            SessionInfo? session = await _repository.GetAsync(
-                $"{SESSION_KEY}{id}",
-                async () => await _context.SessionInfos
-                .Include(x => x.UserEntry)
-                .ThenInclude(
-                    x => x.SessionInfos
-                    .Where(x => !x.IsDeleted && x.Id != id))
-                .FirstOrDefaultAsync(x => !x.IsDeleted && x.Id == id),
-                SessionExpiration);
-            if (session is null)
-                return Result.NotFoundResult($"Session with {id} not contains");
+            SessionInfo? session = await GetSessionInfo(id);
 
-            if (session is null || session.CreatedAt > DateTime.UtcNow.AddDays(-7))
+            Result result = IsInvalidSession(session);
+            if (!result.Success)
+                return result;
+
+            if (IsSessionTooNew(session!, DateTime.UtcNow))
                 return Result.ErrorResult("Not trust", 403);
-            List<(string key, SessionInfo obj, EntityState state)> entities = [.. session.UserEntry.SessionInfos.Select(x =>
+
+            List<SessionInfo>? sessionInfos = await GetSessionInfos(id, session!.UserEntryId);
+
+            if (sessionInfos is null)
+                return Result.NotFoundResult($"Not found session for {session.UserEntryId}");
+
+            List<(string key, SessionInfo obj, EntityState state)> entities = [.. sessionInfos.Select(x =>
                 ($"{SESSION_KEY}{x.Id}", x, EntityState.Deleted))];
 
             if (withCurrent)

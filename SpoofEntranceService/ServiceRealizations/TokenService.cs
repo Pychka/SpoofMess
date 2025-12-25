@@ -84,7 +84,7 @@ public class TokenService(IRepository repository, SpoofEntranceServiceDbContext 
                     ($"{KEY}{oldToken.RefreshTokenHash}", oldToken, EntityState.Deleted), 
                     ($"{KEY}{newToken.RefreshTokenHash}", newToken, EntityState.Added)
                 ], 
-                expiration: TimeSpan.FromDays(30));
+                TimeSpan.FromDays(30));
 
             return Result<UserAuthorizeResponse>.SuccessResult("Ok", new()
             {
