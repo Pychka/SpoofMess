@@ -25,11 +25,10 @@ public class CacheService(IConnectionMultiplexer redis) : ICacheService
         try
         {
             RedisValue? redisValue = await _database.StringGetAsync(key);
-            if (redisValue is null)
+            if (string.IsNullOrEmpty(redisValue.Value))
                 return default;
 
-
-            return JsonService.Deserialize<T>(redisValue.Value!);
+            return JsonService.Deserialize<T>(redisValue.Value.ToString());
         }
         catch (InvalidDataException ex)
         {

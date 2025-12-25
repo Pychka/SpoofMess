@@ -42,7 +42,7 @@ public class FileLoggerService(LogLevel minLevel, string directoryPath, long max
     private void WriteToFile(LogEntry logEntry)
     {
         if (!Directory.Exists(_directoryPath))
-            return;
+            Directory.CreateDirectory(_directoryPath);
 
         if (currentFile is null || new FileInfo(currentFile).Length >= _maxSize)
         {

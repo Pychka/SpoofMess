@@ -18,6 +18,7 @@ public class JsonService
     {
         try
         {
+            Console.WriteLine($"json: {json}");
             return JsonSerializer.Deserialize<T>(json, Options);
         }
         catch

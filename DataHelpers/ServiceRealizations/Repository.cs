@@ -46,7 +46,7 @@ public class Repository(ICacheService cache, ILocalCacheService localCache) : IR
                 _ = Task.Run(() => _localCache.Delete(key));
                 _ = Task.Run(async () => await _cache.Delete(key));
             }
-            if (state is EntityState.Added or EntityState.Modified)
+            else if (state is EntityState.Added or EntityState.Modified)
             {
                 _ = Task.Run(() => _localCache.Save(key, obj));
                 _ = Task.Run(async () => await _cache.Save(key, JsonService.Serialize(obj), expiration));
