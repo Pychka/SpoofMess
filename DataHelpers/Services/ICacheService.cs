@@ -1,17 +1,10 @@
-﻿using StackExchange.Redis;
-
-namespace DataHelpers.Services;
+﻿namespace DataHelpers.Services;
 
 public interface ICacheService
 {
-    public ValueTask<bool> Save<T>(
-        string key, T value,
-        TimeSpan? expiration = null,
-        When when = When.Always);
+    public Task Save<T>(string key, T value);
 
-    public ValueTask<bool> Delete(
-        string key,
-        When when = When.Always);
+    public Task Delete(string key);
 
-    public ValueTask<T?> Get<T>(string key);
+    public Task<T?> Get<T>(string key);
 }
