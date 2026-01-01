@@ -4,7 +4,7 @@ services:
         container_name: spoof-entrance-service-db
         environment:
             - ACCEPT_EULA=Y
-            - MSSQL_SA_PASSWORD=Str0ngP@ssw0rd2024!
+            - MSSQL_SA_PASSWORD=Str0ngP@ssw0rd4267!
             - MSSQL_PID=Developer
         ports:
             - "1433:1433"
@@ -45,7 +45,7 @@ services:
         environment:
             - ASPNETCORE_ENVIRONMENT=Development
             - REDIS_CONNECTION=redis:6379,abortConnect=false,connectTimeout=10000
-            - ConnectionStrings__DefaultConnection=Server=localhost;port=1433;Database=SpoofEntranceService;User Id=SA;Password=Str0ngP@ssw0rd2024!;TrustServerCertificate=true;
+            - ConnectionStrings__DefaultConnection=Server=localhost,1433;Database=SpoofEntranceService;User Id=SA;Password=Str0ngP@ssw0rd4267!;TrustServerCertificate=true;
         ports:
             - "5000:8080"
         volumes:

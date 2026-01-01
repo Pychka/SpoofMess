@@ -1,6 +1,6 @@
 ﻿using CommonObjects.Results;
 using SpoofEntranceService.Models;
-using SpoofEntranceService.ServiceRealizations;
+using SpoofEntranceService.Validators;
 
 namespace SpoofEntranceServiceTest.SessionServiceTests;
 
@@ -10,7 +10,9 @@ public class SessionServiceTests
     [MemberData(nameof(GetSessionInvalidInfos))]
     public void Check_validate_session_info(SessionInfo session, int statusCode)
     {
-        Result result = SessionService.IsInvalidSession(session);
+        SessionValidator sut = new();
+
+        Result result = sut.IsInvalidSession(session);
 
         Assert.Equal(statusCode, result.StatusCode);
     }
@@ -19,7 +21,9 @@ public class SessionServiceTests
     [MemberData(nameof(GetAgesSessionInfos))]
     public void Validate_session_creation_time(SessionInfo session, bool realResult)
     {
-        bool result = SessionService.IsSessionTooNew(session, DateTime.UtcNow);
+        SessionValidator sut = new();
+
+        bool result = sut.IsSessionTooNew(session, DateTime.UtcNow);
 
         Assert.Equal(realResult, result);
     }

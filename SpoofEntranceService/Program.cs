@@ -1,11 +1,14 @@
 using AdditionalHelpers;
-using DataHelpers.ServiceRealizations;
+using DataHelpers.ServiceRealizations.Cache;
+using DataHelpers.ServiceRealizations.Cache.Memory;
+using DataHelpers.ServiceRealizations.Cache.Redis;
 using DataHelpers.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using SpoofEntranceService.Models;
+using SpoofEntranceService.Repositories;
 using SpoofEntranceService.ServiceRealizations;
 using SpoofEntranceService.Services;
+using SpoofEntranceService.Validators;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +16,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
+//swagger api documentation service
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
@@ -30,11 +34,25 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 
     return ConnectionMultiplexer.Connect(configuration);
 });
-builder.Services.AddTransient<IMemoryCache, MemoryCache>();
 
-builder.Services.AddTransient<IRepository, Repository>();
-builder.Services.AddTransient<ILocalCacheService, LocalCacheService>();
-builder.Services.AddTransient<ICacheService, CacheService>();
+//in-memory cache
+builder.Services.AddTransient<IMemoryCacheService, LocalCacheService>();
+builder.Services.AddTransient<ICacheService, MemoryCache>();
+
+//redis
+builder.Services.AddTransient<IRedisService, BaseRedisCache>();
+builder.Services.AddTransient<ICacheService, RedisCache>();
+
+//multi cache(in-memory + redis)
+builder.Services.AddTransient<ICacheService, MultiCache>();
+
+builder.Services.AddTransient<SessionRepository>();
+builder.Services.AddTransient<TokenRepository>();
+builder.Services.AddTransient<UserRepository>();
+
+builder.Services.AddTransient<TokenValidator>();
+builder.Services.AddTransient<SessionValidator>();
+builder.Services.AddTransient<UserEntryValidator>();
 
 //logic services
 builder.Services.AddTransient<ISessionService, SessionService>();

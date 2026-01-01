@@ -1,30 +1,26 @@
-﻿using AdditionalHelpers;
-using DataHelpers.Services;
+﻿using DataHelpers.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace DataHelpers.ServiceRealizations;
 
-public class Repository(ICacheService cache, ILocalCacheService localCache) : IRepository
+public class Repository<T, TKey>(ICacheService cache, DbContext context, ProcessQueueTasksService processQueueTasks) where T : IdentifiedEntity<TKey>
 {
-    private readonly ICacheService _cache = cache;
-    private readonly ILocalCacheService _localCache = localCache;
-    public async Task<T?> GetAsync<T>(string key, Func<Task<T>> function, TimeSpan? expiration = null)
+    protected readonly ICacheService _cache = cache;
+    protected readonly DbContext _context = context;
+    protected readonly DbSet<T> _set = context.Set<T>();
+    protected readonly ProcessQueueTasksService _processQueueTasks = processQueueTasks;
+    protected virtual TimeSpan? Expiration { get; set; } = TimeSpan.FromMinutes(10);
+
+    public virtual async ValueTask<T?> GetByIdAsync(TKey id)
     {
         try
         {
-            T? value = _localCache.Get<T>(key);
-            if (value is not null)
-                return value;
+            string key = GetKey(id);
+            T? entity = await _cache.Get<T>(key);
 
-            value = await _cache.Get<T>(key);
-            if(value is not null)
-                return value;
+            entity ??= await GetFromDb(key, async () => await _set.FirstOrDefaultAsync(x => EqualityComparer<TKey>.Default.Equals(x.Id, id)));
 
-            value = await function();
-            if (value is not null)
-                _ = Task.Run(async () => await _cache.Save(key, JsonService.Serialize(value), expiration));
-
-            return value;
+            return entity;
         }
         catch (Exception ex)
         {
@@ -32,27 +28,16 @@ public class Repository(ICacheService cache, ILocalCacheService localCache) : IR
         }
     }
 
-    public async Task<T> ChangeState<T>(DbContext context, string key, T obj, EntityState state = EntityState.Added, TimeSpan? expiration = null) where T : class
+    protected virtual async ValueTask<T?> GetAsync(TKey id, Func<Task<T?>> function)
     {
         try
         {
-            context.Entry(obj).State = state;
+            string key = GetKey(id);
+            T? entity = await _cache.Get<T>(key);
 
-            await context.SaveChangesAsync();
-            await context.Entry(obj).ReloadAsync();
+            entity ??= await GetFromDb(key, function);
 
-            if (state is EntityState.Deleted)
-            {
-                _ = Task.Run(() => _localCache.Delete(key));
-                _ = Task.Run(async () => await _cache.Delete(key));
-            }
-            else if (state is EntityState.Added or EntityState.Modified)
-            {
-                _ = Task.Run(() => _localCache.Save(key, obj));
-                _ = Task.Run(async () => await _cache.Save(key, JsonService.Serialize(obj), expiration));
-                await context.Entry(obj).ReloadAsync();
-            }
-            return obj;
+            return entity;
         }
         catch (Exception ex)
         {
@@ -60,37 +45,165 @@ public class Repository(ICacheService cache, ILocalCacheService localCache) : IR
         }
     }
 
-    public async Task<List<T>> ChangeStates<T>(DbContext context, (string key, T obj, EntityState state)[] entities, TimeSpan? expiration = null) where T : class
+    protected virtual async ValueTask<T?> GetAsync(string key, Func<Task<T?>> function)
     {
         try
         {
-            List<T> objects = [];
-            for(int en = 0; en < entities.Length; en++)
-                context.Entry(entities[en].obj).State = entities[en].state;
+            T? entity = await _cache.Get<T>(key);
 
-            await context.SaveChangesAsync();
-            for (int en = 0; en < entities.Length; en++)
-            {
-                var (key, obj, state) = entities[en];
-                if (state is EntityState.Deleted)
-                {
-                    _ = Task.Run(() => _localCache.Delete(key));
-                    _ = Task.Run(async () => await _cache.Delete(key));
-                }
-                if (state is EntityState.Added or EntityState.Modified)
-                {
-                    _ = Task.Run(() => _localCache.Save(key, obj));
-                    _ = Task.Run(async () => await _cache.Save(key, JsonService.Serialize(obj), expiration));
-                    await context.Entry(obj).ReloadAsync();
-                }
-                objects.Add(obj);
-            }
+            entity ??= await GetFromDb(key, function);
 
-            return objects;
+            return entity;
         }
         catch (Exception ex)
         {
             throw new ApplicationException("Ошибка при работе с БД", ex);
         }
     }
+
+    protected virtual async ValueTask<List<T>?> GetManyAsync(string key, Func<Task<List<T>?>> function)
+    {
+        try
+        {
+            List<T>? entities = await _cache.Get<List<T>>(key);
+            if(entities is not null)
+                return entities;
+
+            entities = await function();
+            if (entities is not null)
+                _processQueueTasks.AddTask(async () => await _cache.Save(key, entities));
+
+            return entities;
+        }
+        catch (Exception ex)
+        {
+            throw new ApplicationException("Ошибка при работе с БД", ex);
+        }
+    }
+
+    public virtual async Task AddAsync(T entity)
+    {
+        try
+        {
+            ChangeEntity(entity);
+            await _set.AddAsync(entity);
+            await _context.SaveChangesAsync();
+            string key = GetKey(entity);
+
+            SaveToCaches(key, entity);
+        }
+        catch (Exception ex)
+        {
+            throw new ApplicationException("Ошибка при работе с БД", ex);
+        }
+    }
+
+    public virtual async Task DeleteAsync(T entity)
+    {
+        try
+        {
+            ChangeEntity(entity);
+            _set.Remove(entity);
+            await _context.SaveChangesAsync();
+            string key = GetKey(entity);
+
+            _processQueueTasks.AddTask(async () => await _cache.Delete(key));
+        }
+        catch (Exception ex)
+        {
+            throw new ApplicationException("Ошибка при работе с БД", ex);
+        }
+    }
+
+    public virtual async Task UpdateAsync(T entity)
+    {
+        try
+        {
+            ChangeEntity(entity);
+            _set.Update(entity);
+            await _context.SaveChangesAsync();
+            string key = GetKey(entity);
+
+            SaveToCaches(key, entity);
+        }
+        catch (Exception ex)
+        {
+            throw new ApplicationException("Ошибка при работе с БД", ex);
+        }
+    }
+
+    public virtual async Task UpdateRangeAsync(List<T> entities)
+    {
+        try
+        {
+            T? entity = null;
+
+            for (int i = 0; i < entities.Count; i++)
+            {
+                entity = entities[i];
+                ChangeEntity(entity);
+            }
+
+            _set.UpdateRange(entities);
+            await _context.SaveChangesAsync();
+
+            string key = string.Empty;
+            for (int i = 0; i < entities.Count; i++)
+            {
+                entity = entities[i];
+                key = GetKey(entity);
+                SaveToCaches(key, entity);
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new ApplicationException("Ошибка при работе с БД", ex);
+        }
+    }
+
+    protected virtual void ChangeEntity(T entity)
+    {
+
+    }
+
+    protected async ValueTask<T?> GetFromDb(string key, Func<Task<T?>> function)
+    {
+        T? entity = await function();
+        if (entity is not null)
+            SaveToCaches(key, entity);
+
+        return entity;
+    }
+
+    protected async Task<TResult> BeginTransaction<TResult>(Func<Task<TResult>> function)
+    {
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            TResult result = await function();
+            await transaction.CommitAsync();
+            return result;
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    public virtual async Task SoftDeleteAsync(T entity)
+    {
+        entity.IsDeleted = true;
+        ChangeEntity(entity);
+        await UpdateAsync(entity);
+    }
+
+    protected virtual string GetKey(T entity) =>
+        $"{entity.GetType().Name.ToLower()}:{entity.GetId}";
+
+    protected virtual string GetKey(TKey id) =>
+        $"{typeof(T).Name.ToLower()}:{id}";
+
+    protected void SaveToCaches(string key, T entity) =>
+        _processQueueTasks.AddTask(async () => await _cache.Save(key, entity));
 }
