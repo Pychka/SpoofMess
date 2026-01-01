@@ -22,6 +22,24 @@ public class ConsoleLoggerService(LogLevel minLogLevel) : ILoggerService
         Console.ForegroundColor = colors.FirstOrDefault(x => x.LogLevel == level)?.Color ?? ConsoleColor.Blue;
         Console.Write(level);
         Console.ForegroundColor = lastColor;
-        Console.WriteLine($": {message}{((int)_minLogLevel < 2 ? (exception is null ? "null exception" : $"{exception.Message}\n{exception.InnerException}") : "")}");
+        Console.WriteLine($": {message} \nException: {((int)_minLogLevel < 2 ? (exception is null ? "" : $"{exception.Message}\n{exception.InnerException}") : "")}");
     }
+
+    public void Info(string message) =>
+    Log(LogLevel.Info, message);
+
+    public void Error(string message, Exception? exception = null) =>
+        Log(LogLevel.Error, message, exception);
+
+    public void Fatal(string message, Exception? exception = null) =>
+        Log(LogLevel.Fatal, message, exception);
+
+    public void Debug(string message) =>
+        Log(LogLevel.Debug, message);
+
+    public void Trace(string message) =>
+        Log(LogLevel.Trace, message);
+
+    public void Warning(string message) =>
+        Log(LogLevel.Warning, message);
 }

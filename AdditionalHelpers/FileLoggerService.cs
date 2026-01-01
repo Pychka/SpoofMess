@@ -101,4 +101,22 @@ public class FileLoggerService(LogLevel minLevel, string directoryPath, long max
 
         _bytesInBuffer = 0;
     }
+
+    public void Info(string message) =>
+        Log(LogLevel.Info, message);
+
+    public void Error(string message, Exception? exception = null) =>
+        Log(LogLevel.Error, message, exception);
+
+    public void Fatal(string message, Exception? exception = null) =>
+        Log(LogLevel.Fatal, message, exception);
+
+    public void Debug(string message) =>
+        Log(LogLevel.Debug, message);
+
+    public void Trace(string message) =>
+        Log(LogLevel.Trace, message);
+
+    public void Warning(string message) =>
+        Log(LogLevel.Warning, message);
 }
