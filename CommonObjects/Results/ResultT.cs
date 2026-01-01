@@ -14,27 +14,23 @@ public class Result<T>
     public T? Body { get; set; }
 
 
-    public static Result<T> SuccessResult(string message, T body) =>
+    public static Result<T> SuccessResult(T body, string? message = "OK", int statusCode = 200) =>
         new()
         {
             Success = true,
             Message = message,
+            StatusCode = statusCode,
             Body = body
         };
-    public static Result<T> DeletedResult(string message) =>
-        new()
-        {
-            Success = true,
-            Message = message
-        };
 
-    public static Result<T> NotFoundResult(string message) =>
-        new()
-        {
-            Success = false,
-            Error = message,
-            StatusCode = 404
-        };
+    public static Result<T> OkResult(T body) =>
+        SuccessResult(body);
+
+    public static Result<T> NotFoundResult(string error) =>
+        ErrorResult(error, 404);
+
+    public static Result<T> BadRequest(string error) =>
+        ErrorResult(error, 400);
 
     public static Result<T> ErrorResult(string error, int statusCode = 500) =>
         new()
@@ -42,5 +38,14 @@ public class Result<T>
             Success = false,
             Error = error,
             StatusCode = statusCode
+        };
+
+    public static Result<T> From(Result result) =>
+        new()
+        {
+            Success = result.Success,
+            Error = result.Error,
+            StatusCode = result.StatusCode,
+            Message = result.Message,
         };
 }
