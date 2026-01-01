@@ -8,11 +8,11 @@ public static class UserValidator
     public static Result Validate(User? user)
     {
         if (user is null)
-            return Result.ErrorResult("Invalid id", 400);
+            return Result.BadRequest("Invalid id");
 
         if (user.IsDeleted)
-            return Result.ErrorResult("User was deleted", 400);
+            return Result.BadRequest("User was deleted");
 
-        return Result.SuccessResult();
+        return Result.OkResult();
     }
 }
