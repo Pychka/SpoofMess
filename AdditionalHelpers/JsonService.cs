@@ -1,5 +1,6 @@
 ﻿using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace AdditionalHelpers;
 
@@ -10,6 +11,7 @@ public class JsonService
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        ReferenceHandler = ReferenceHandler.IgnoreCycles
     };
     public static string Serialize<T>(T obj) =>
         JsonSerializer.Serialize(obj, Options);
