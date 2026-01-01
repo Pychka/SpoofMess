@@ -23,54 +23,62 @@ public partial class SpoofEntranceServiceDbContext : DbContext
     {
         modelBuilder.Entity<SessionInfo>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK_SessionInfo_Id");
+            entity.HasKey(e => e.Id).HasName("SessionInfo_pkey");
 
             entity.ToTable("SessionInfo");
 
-            entity.HasIndex(e => e.Id, "IX_SessionInfo_SessionId");
+            entity.HasIndex(e => e.Id, "IX_SessionInfo_Id");
 
-            entity.HasIndex(e => e.UserEntryId, "IX_SessionInfo_UserId_Active").HasFilter("([IsActive]=(1) AND [IsDeleted]=(0))");
+            entity.HasIndex(e => e.UserEntryId, "IX_SessionInfo_UserId_Active").HasFilter("((\"IsActive\" = true) AND (\"IsDeleted\" = false))");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone");
             entity.Property(e => e.DeviceId).HasMaxLength(100);
             entity.Property(e => e.DeviceName).HasMaxLength(255);
             entity.Property(e => e.IpAddress).HasMaxLength(45);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
-            entity.Property(e => e.LastActivityAt).HasColumnType("datetime");
+            entity.Property(e => e.LastActivityAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp with time zone");
             entity.Property(e => e.Platform).HasMaxLength(50);
             entity.Property(e => e.UserAgent).HasMaxLength(500);
 
             entity.HasOne(d => d.UserEntry).WithMany(p => p.SessionInfos)
                 .HasForeignKey(d => d.UserEntryId)
-                .HasConstraintName("FK_SessionInfo_UserEntryId");
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("SessionInfo_UserEntryId_fkey");
         });
 
         modelBuilder.Entity<Token>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK_Token_Id");
+            entity.HasKey(e => e.Id).HasName("Token_pkey");
 
             entity.ToTable("Token");
 
-            entity.HasIndex(e => e.SessionInfoId, "IX_Token_SessionInfoId").HasFilter("([IsDeleted]=(0))");
+            entity.HasIndex(e => e.SessionInfoId, "IX_Token_SessionInfoId").HasFilter("(\"IsDeleted\" = false)");
 
-            entity.HasIndex(e => e.Id, "IX_Token_ValidTo").HasFilter("([IsDeleted]=(0))");
+            entity.HasIndex(e => e.Id, "IX_Token_ValidTo").HasFilter("(\"IsDeleted\" = false)");
 
             entity.Property(e => e.Id).HasMaxLength(100);
-            entity.Property(e => e.ValidTo).HasColumnType("datetime");
+            entity.Property(e => e.ValidTo).HasColumnType("timestamp with time zone");
 
             entity.HasOne(d => d.SessionInfo).WithMany(p => p.Tokens)
                 .HasForeignKey(d => d.SessionInfoId)
-                .HasConstraintName("FK_Token_SessionInfoId");
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("Token_SessionInfoId_fkey");
         });
 
         modelBuilder.Entity<UserEntry>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK_User_Id");
+            entity.HasKey(e => e.Id).HasName("UserEntry_pkey");
 
             entity.ToTable("UserEntry");
 
-            entity.HasIndex(e => e.UniqueName, "UQ__UserEntr__6C972DEE78064811").IsUnique();
+            entity.HasIndex(e => e.UniqueName, "IX_UserEntry_UniqueName");
+
+            entity.HasIndex(e => e.UniqueName, "UserEntry_UniqueName_key").IsUnique();
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.PasswordHash).HasMaxLength(100);
