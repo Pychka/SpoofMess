@@ -48,15 +48,15 @@ public partial class SpoofEntranceServiceDbContext : DbContext
 
         modelBuilder.Entity<Token>(entity =>
         {
-            entity.HasKey(e => e.RefreshTokenHash).HasName("PK_Token_Id");
+            entity.HasKey(e => e.Id).HasName("PK_Token_Id");
 
             entity.ToTable("Token");
 
             entity.HasIndex(e => e.SessionInfoId, "IX_Token_SessionInfoId").HasFilter("([IsDeleted]=(0))");
 
-            entity.HasIndex(e => e.RefreshTokenHash, "IX_Token_ValidTo").HasFilter("([IsDeleted]=(0))");
+            entity.HasIndex(e => e.Id, "IX_Token_ValidTo").HasFilter("([IsDeleted]=(0))");
 
-            entity.Property(e => e.RefreshTokenHash).HasMaxLength(100);
+            entity.Property(e => e.Id).HasMaxLength(100);
             entity.Property(e => e.ValidTo).HasColumnType("datetime");
 
             entity.HasOne(d => d.SessionInfo).WithMany(p => p.Tokens)

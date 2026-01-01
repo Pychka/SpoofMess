@@ -1,9 +1,9 @@
-﻿namespace SpoofEntranceService.Models;
+﻿using DataHelpers;
 
-public partial class SessionInfo
+namespace SpoofEntranceService.Models;
+
+public partial class SessionInfo : IdentifiedEntity<Guid>, IIdentifiedEntity
 {
-    public Guid Id { get; set; }
-
     public Guid UserEntryId { get; set; }
 
     public string DeviceId { get; set; } = null!;
@@ -21,8 +21,6 @@ public partial class SessionInfo
     public DateTime LastActivityAt { get; set; }
 
     public bool IsActive { get; set; }
-
-    public bool IsDeleted { get; set; }
 
     public virtual ICollection<Token> Tokens { get; set; } = [];
 

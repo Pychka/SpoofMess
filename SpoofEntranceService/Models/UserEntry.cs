@@ -1,14 +1,12 @@
-﻿namespace SpoofEntranceService.Models;
+﻿using DataHelpers;
 
-public partial class UserEntry
+namespace SpoofEntranceService.Models;
+
+public partial class UserEntry : IdentifiedEntity<Guid>
 {
-    public Guid Id { get; set; }
-
     public string PasswordHash { get; set; } = null!;
 
     public string UniqueName { get; set; } = null!;
-
-    public bool IsDeleted { get; set; }
 
     public virtual ICollection<SessionInfo> SessionInfos { get; set; } = [];
 }

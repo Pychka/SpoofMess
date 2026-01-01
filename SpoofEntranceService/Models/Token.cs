@@ -1,14 +1,25 @@
-﻿namespace SpoofEntranceService.Models;
+﻿using DataHelpers;
+using System.ComponentModel.DataAnnotations.Schema;
 
-public partial class Token
+namespace SpoofEntranceService.Models;
+
+public partial class Token : IdentifiedEntity<string>, ISoftDeletable
 {
-    public string RefreshTokenHash { get; set; } = null!;
+    [Column("RefreshTokenHash")]
+    public new string Id { get; set; } = default!;
 
     public Guid SessionInfoId { get; set; }
 
     public DateTime ValidTo { get; set; }
 
-    public bool IsDeleted { get; set; }
-
     public virtual SessionInfo SessionInfo { get; set; } = null!;
+
+    public Token() { }
+
+    public Token(string refreshTokenHash, Guid sessionInfoId, DateTime validTo)
+    {
+        Id = refreshTokenHash;
+        SessionInfoId = sessionInfoId;
+        ValidTo = validTo;
+    }
 }
