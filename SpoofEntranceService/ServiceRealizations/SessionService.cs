@@ -41,7 +41,7 @@ public class SessionService(
         }
         catch (Exception ex)
         {
-            _logService.Log(AdditionalHelpers.LogLevel.Error, "Error", ex);
+            _logService.Error("Error", ex);
             return Result.ErrorResult(ex.Message);
         }
     }
@@ -62,7 +62,7 @@ public class SessionService(
         }
         catch (Exception ex)
         {
-            _logService.Log(AdditionalHelpers.LogLevel.Error, "Error", ex);
+            _logService.Error("Error", ex);
             return Result.ErrorResult(ex.Message);
         }
     }
@@ -80,7 +80,7 @@ public class SessionService(
         }
         catch (Exception ex)
         {
-            _logService.Log(AdditionalHelpers.LogLevel.Error, "Error", ex);
+            _logService.Error("Error", ex);
             return Result<List<CommonObjects.DTO.SessionInfo>>.ErrorResult(ex.Message);
         }
     }
@@ -89,16 +89,17 @@ public class SessionService(
     {
         try
         {
+            sessionInfo.Id = Guid.CreateVersion7();
             sessionInfo.IsActive = true;
             sessionInfo.UserEntry = userEntry;
-
+            sessionInfo.DeviceId = Guid.CreateVersion7().ToString();
             await _sessionRepository.AddAsync(sessionInfo);
 
             return Result.OkResult("Ok");
         }
         catch (Exception ex)
         {
-            _logService.Log(AdditionalHelpers.LogLevel.Error, "Error", ex);
+            _logService.Error("Error", ex);
             return Result.ErrorResult(ex.Message);
         }
     }
@@ -119,7 +120,7 @@ public class SessionService(
         }
         catch (Exception ex)
         {
-            _logService.Log(AdditionalHelpers.LogLevel.Error, "Error", ex);
+            _logService.Error("Error", ex);
             return Result.ErrorResult("Error");
         }
     }

@@ -45,7 +45,7 @@ namespace SpoofEntranceService.ServiceRealizations
             }
             catch (Exception ex)
             {
-                _logService.Log(AdditionalHelpers.LogLevel.Error, "Error", ex);
+                _logService.Error("Error", ex);
                 return Result<UserAuthorizeResponse>.ErrorResult(ex.Message);
             }
         }
@@ -61,6 +61,7 @@ namespace SpoofEntranceService.ServiceRealizations
 
                 UserEntry newUser = new()
                 {
+                    Id = Guid.CreateVersion7(),
                     UniqueName = request.Login,
                     PasswordHash = Hasher.HashPassword(request.Password)
                 };
@@ -73,7 +74,7 @@ namespace SpoofEntranceService.ServiceRealizations
             }
             catch (Exception ex)
             {
-                _logService.Log(AdditionalHelpers.LogLevel.Error, "Error", ex);
+                _logService.Error("Error", ex);
                 return Result<UserAuthorizeResponse>.ErrorResult(ex.Message);
             }
         }
@@ -94,7 +95,7 @@ namespace SpoofEntranceService.ServiceRealizations
             }
             catch(Exception ex)
             {
-                _logService.Log(AdditionalHelpers.LogLevel.Error, "Error", ex);
+                _logService.Error("Error", ex);
                 return Result.ErrorResult(ex.Message);
             }
         }

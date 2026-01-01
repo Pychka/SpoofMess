@@ -28,7 +28,7 @@ public class TokenService(TokenRepository repository, TokenValidator tokenValida
         }
         catch (Exception ex)
         {
-            _logService.Log(AdditionalHelpers.LogLevel.Error, "Error", ex);
+            _logService.Error("Error", ex);
             return Result<UserAuthorizeResponse>.ErrorResult("Internal server error", 500);
         }
 
@@ -56,7 +56,7 @@ public class TokenService(TokenRepository repository, TokenValidator tokenValida
         }
         catch (Exception ex)
         {
-            _logService.Log(AdditionalHelpers.LogLevel.Error, "Error", ex);
+            _logService.Error("Error", ex);
             return Result<UserAuthorizeResponse>.ErrorResult("Internal server error");
         }
     }
