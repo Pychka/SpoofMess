@@ -3,7 +3,6 @@
     <Project Path="AdditionalHelpers/AdditionalHelpers.csproj" Id="f45d4600-43ea-4a5a-8bfe-aa4b1eb85a0f" />
     <Project Path="CommonObjects/CommonObjects.csproj" Id="63622330-76dc-4b2e-abb7-7f1a4ff31f02" />
     <Project Path="DataHelpers/DataHelpers.csproj" Id="99645b54-a976-4542-b23b-775fbf19fe3d" />
-    <Project Path="ExceptionHandler/ExceptionHandler.csproj" Id="8157cb3f-500b-4120-90bd-9d9837a23dc5" />
     <Project Path="SecurityLibrary/SecurityLibrary.csproj" Id="da4bb2f8-6158-4f2d-a9d0-6cdde4a684f6" />
   </Folder>
   <Folder Name="/Helpers/Tests/">

@@ -1,4 +1,5 @@
 using AdditionalHelpers;
+using DataHelpers.ServiceRealizations;
 using DataHelpers.ServiceRealizations.Cache;
 using DataHelpers.ServiceRealizations.Cache.Memory;
 using DataHelpers.ServiceRealizations.Cache.Redis;
@@ -22,7 +23,8 @@ builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 //"Server=.;Database=SpoofEntranceService;Trusted_Connection=True;TrustServerCertificate=True"
 //data services
-builder.Services.AddDbContext<SpoofEntranceServiceDbContext>(x => x.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+Console.WriteLine(builder.Configuration.GetConnectionString("Redis"));
+builder.Services.AddDbContext<SpoofEntranceServiceDbContext>(x => x.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 {
@@ -35,13 +37,14 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
     return ConnectionMultiplexer.Connect(configuration);
 });
 
+builder.Services.AddTransient<ProcessQueueTasksService>();
+
 //in-memory cache
+builder.Services.AddTransient<Microsoft.Extensions.Caching.Memory.IMemoryCache, Microsoft.Extensions.Caching.Memory.MemoryCache>();
 builder.Services.AddTransient<IMemoryCacheService, LocalCacheService>();
-builder.Services.AddTransient<ICacheService, MemoryCache>();
 
 //redis
 builder.Services.AddTransient<IRedisService, BaseRedisCache>();
-builder.Services.AddTransient<ICacheService, RedisCache>();
 
 //multi cache(in-memory + redis)
 builder.Services.AddTransient<ICacheService, MultiCache>();

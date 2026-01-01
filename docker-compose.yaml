@@ -1,19 +1,25 @@
 services:
-    sessqlserver:
-        image: mcr.microsoft.com/mssql/server:2022-latest
+    sessql:
+        image: postgres:18.1
         container_name: spoof-entrance-service-db
         environment:
-            - ACCEPT_EULA=Y
-            - MSSQL_SA_PASSWORD=Str0ngP@ssw0rd4267!
-            - MSSQL_PID=Developer
+            POSTGRES_DB: SpoofEntranceService
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres123
+            PGDATA: /var/lib/postgresql/data/pgdata
         ports:
-            - "1433:1433"
+            - "5432:5432"
         volumes:
-            - ses_sql_data:/var/opt/mssql
-            - ./SpoofEntranceService/SpoofEntranceService.sql:/docker-entrypoint-initdb.d/SpoofEntranceService/SpoofEntranceService.sql
+            - postgres_data:/var/lib/postgresql/data
+            - ./SpoofEntranceService/SpoofEntranceService.sql:/docker-entrypoint-initdb.d/init.sql
         restart: unless-stopped
         networks:
             - spoof-network
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
     redis:
         image: redis:8.4.0
         container_name: redis-test
@@ -21,11 +27,7 @@ services:
             - "6379:6379"
         volumes:
             - redis_data:/data
-        command: 
-            - redis-server
-            - --save 20 1
-            - --loglevel warning
-            - --appendonly yes
+        command: redis-server --appendonly yes --requirepass redis123
         restart: unless-stopped
         healthcheck:
             test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
@@ -41,11 +43,12 @@ services:
         container_name: spoof-entrance-service
         depends_on:
             - redis
-            - sessqlserver
+            - sessql
         environment:
             - ASPNETCORE_ENVIRONMENT=Development
-            - REDIS_CONNECTION=redis:6379,abortConnect=false,connectTimeout=10000
-            - ConnectionStrings__DefaultConnection=Server=localhost,1433;Database=SpoofEntranceService;User Id=SA;Password=Str0ngP@ssw0rd4267!;TrustServerCertificate=true;
+            - ConnectionStrings__Redis=redis:6379,password=redis123,abortConnect=false,connectTimeout=10000
+            - Redis__Password=redis123
+            - ConnectionStrings__DefaultConnection=Host=sessql;Port=5432;Database=SpoofEntranceService;Username=postgres;Password=postgres123;Pooling=true;Timeout=30;CommandTimeout=30;
         ports:
             - "5000:8080"
         volumes:
@@ -56,7 +59,7 @@ services:
 volumes:
     redis_data:
         driver: local
-    ses_sql_data:
+    postgres_data:
         driver: local
 
 networks:
