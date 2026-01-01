@@ -1,16 +1,14 @@
-﻿namespace SpoofSettingsService.Models;
+﻿using DataHelpers;
 
-public partial class ChatAvatar
+namespace SpoofSettingsService.Models;
+
+public partial class ChatAvatar : IdentifiedEntity<long>, IChangeable
 {
-    public long Id { get; set; }
-
     public long? ChatId { get; set; }
 
     public long? FileId { get; set; }
 
     public bool IsActive { get; set; }
-
-    public bool IsDeleted { get; set; }
 
     public DateTime LastModified { get; set; }
 

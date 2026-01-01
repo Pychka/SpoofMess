@@ -1,19 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using DataHelpers;
 
 namespace SpoofSettingsService.Models;
 
-public partial class UserAvatar
+public partial class UserAvatar : IdentifiedEntity<long>, IChangeable
 {
-    public long Id { get; set; }
-
     public long? UserId { get; set; }
 
     public long? FileId { get; set; }
 
     public bool IsActive { get; set; }
-
-    public bool IsDeleted { get; set; }
 
     public DateTime LastModified { get; set; }
 

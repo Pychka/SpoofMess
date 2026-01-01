@@ -1,9 +1,9 @@
-﻿namespace SpoofSettingsService.Models;
+﻿using DataHelpers;
 
-public partial class User
+namespace SpoofSettingsService.Models;
+
+public partial class User : IdentifiedEntity<long>
 {
-    public long Id { get; set; }
-
     public DateTime WasOnline { get; set; }
 
     public string Name { get; set; } = null!;
@@ -17,8 +17,6 @@ public partial class User
     public bool ForwardMessage { get; set; }
 
     public bool InviteMe { get; set; }
-
-    public bool IsDeleted { get; set; }
 
     public virtual ICollection<ChatUser> ChatUsers { get; set; } = [];
 

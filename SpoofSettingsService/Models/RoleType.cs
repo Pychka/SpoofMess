@@ -1,9 +1,9 @@
-﻿namespace SpoofSettingsService.Models;
+﻿using DataHelpers;
 
-public partial class RoleType
+namespace SpoofSettingsService.Models;
+
+public partial class RoleType : IdentifiedEntity<long>
 {
-    public long Id { get; set; }
-
     public string Title { get; set; } = null!;
 
     public bool SendMessage { get; set; }

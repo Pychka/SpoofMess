@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using DataHelpers;
 
 namespace SpoofSettingsService.Models;
 
-public partial class ChatType
+public partial class ChatType : IdentifiedEntity<long>
 {
-    public long Id { get; set; }
-
     public string Title { get; set; } = null!;
 
-    public virtual ICollection<Chat> Chats { get; set; } = new List<Chat>();
+    public virtual ICollection<Chat> Chats { get; set; } = [];
 }

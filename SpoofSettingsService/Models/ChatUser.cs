@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using DataHelpers;
 
 namespace SpoofSettingsService.Models;
 
-public partial class ChatUser
+public partial class ChatUser : IdentifiedEntity<long>
 {
-    public long Id { get; set; }
-
     public long ChatId { get; set; }
 
     public long UserId { get; set; }
@@ -16,8 +13,6 @@ public partial class ChatUser
     public DateTime JoinedAt { get; set; }
 
     public bool IsMutted { get; set; }
-
-    public bool IsDeleted { get; set; }
 
     public virtual Chat Chat { get; set; } = null!;
 
