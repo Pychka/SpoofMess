@@ -1,42 +1,30 @@
-﻿using CommonObjects.Requests;
+﻿using AdditionalHelpers;
+using CommonObjects.Requests;
 using CommonObjects.Responses;
 using CommonObjects.Results;
 using Microsoft.EntityFrameworkCore;
 using SecurityLibrary;
-using SpoofEntranceService.Models;
-using AdditionalHelpers;
 using SpoofEntranceService.Converters;
-using DataHelpers.Services;
+using SpoofEntranceService.Models;
+using SpoofEntranceService.Repositories;
 using SpoofEntranceService.Services;
+using SpoofEntranceService.Validators;
 
 namespace SpoofEntranceService.ServiceRealizations;
 
-public class TokenService(IRepository repository, SpoofEntranceServiceDbContext context, ILoggerService loger) : ITokenService
+public class TokenService(TokenRepository repository, TokenValidator tokenValidator, ILoggerService loger) : ITokenService
 {
-    private readonly SpoofEntranceServiceDbContext _context = context;
-    private readonly IRepository _repository = repository;
+    private readonly TokenRepository _repository = repository;
     private readonly ILoggerService _logService = loger;
+    private readonly TokenValidator _tokenValidator = tokenValidator;
 
-    private const string KEY = "refresh_token:";
     public async Task<Result<UserAuthorizeResponse>> Create(SessionInfo sessionInfo)
     {
-        (string Token, string TokenHash) refresh = Tokenizer.CreateRefresh();
-        string access = Tokenizer.CreateAccess(sessionInfo.UserEntry.UniqueName, sessionInfo.UserEntryId, sessionInfo.Id);
-
-        Token newToken = new()
-        {
-            RefreshTokenHash = refresh.TokenHash,
-            SessionInfoId = sessionInfo.Id,
-            ValidTo = DateTime.UtcNow.AddDays(30)
-        };
+        TokenResponse response = CreateResponse(sessionInfo);
 
         try
         {
-            newToken = await _repository.ChangeState(
-                _context,
-                $"{KEY}{refresh.TokenHash}",
-                newToken,
-                expiration: TimeSpan.FromDays(30));
+            await _repository.Add(response.Token);
         }
         catch (Exception ex)
         {
@@ -44,12 +32,7 @@ public class TokenService(IRepository repository, SpoofEntranceServiceDbContext 
             return Result<UserAuthorizeResponse>.ErrorResult("Internal server error", 500);
         }
 
-        return Result<UserAuthorizeResponse>.SuccessResult("Ok", new()
-        {
-            AccessToken = access,
-            RefreshToken = refresh.Token,
-            SessionInfo = sessionInfo.ToDTO()
-        });
+        return Result<UserAuthorizeResponse>.OkResult(response.Response);
     }
 
 
@@ -58,45 +41,42 @@ public class TokenService(IRepository repository, SpoofEntranceServiceDbContext 
         try
         {
             string hashToken = Hasher.HashKey(tokenRequest.Token);
-            Token? oldToken = await _repository.GetAsync(
-                    $"{KEY}{hashToken}",
-                    async () => await _context.Tokens.Include(x => x.SessionInfo).ThenInclude(x => x.UserEntry).FirstOrDefaultAsync(x => hashToken == x.RefreshTokenHash)
-                );
+            Token? oldToken = await _repository.GetByRefreshHash(hashToken);
 
-            if (oldToken is null)
-                return Result<UserAuthorizeResponse>.NotFoundResult($"Not found {tokenRequest.Token}");
-            if (oldToken.ValidTo < DateTime.UtcNow)
-                return Result<UserAuthorizeResponse>.ErrorResult("Refresh token expired", 400);
+            Result result = _tokenValidator.ValidateToken(oldToken);
+            if (!result.Success)
+                return Result<UserAuthorizeResponse>.From(result);
 
-            (string Token, string TokenHash) refresh = Tokenizer.CreateRefresh();
-            string access = Tokenizer.CreateAccess(oldToken.SessionInfo.UserEntry.UniqueName, oldToken.SessionInfo.UserEntryId, oldToken.SessionInfoId);
+            tokenRequest.Token = string.Empty;
+            TokenResponse response = CreateResponse(oldToken!.SessionInfo);
 
-            Token newToken = new()
-            {
-                RefreshTokenHash = refresh.TokenHash,
-                SessionInfoId = oldToken.SessionInfoId,
-                ValidTo = DateTime.UtcNow.AddDays(30)
-            };
+            await _repository.Replace(oldToken, response.Token);
 
-            await _repository.ChangeStates(
-                _context,
-                [
-                    ($"{KEY}{oldToken.RefreshTokenHash}", oldToken, EntityState.Deleted), 
-                    ($"{KEY}{newToken.RefreshTokenHash}", newToken, EntityState.Added)
-                ], 
-                TimeSpan.FromDays(30));
-
-            return Result<UserAuthorizeResponse>.SuccessResult("Ok", new()
-            {
-                AccessToken = access,
-                RefreshToken = refresh.Token,
-                SessionInfo = oldToken.SessionInfo.ToDTO()
-            });
+            return Result<UserAuthorizeResponse>.OkResult(response.Response);
         }
         catch (Exception ex)
         {
             _logService.Log(AdditionalHelpers.LogLevel.Error, "Error", ex);
-            return Result<UserAuthorizeResponse>.ErrorResult("Internal server error", 500);
+            return Result<UserAuthorizeResponse>.ErrorResult("Internal server error");
         }
+    }
+
+    private static DateTime GetLifeTime() => DateTime.UtcNow.AddDays(30);
+
+    public static TokenResponse CreateResponse(SessionInfo sessionInfo)
+    {
+        if (sessionInfo.UserEntry is null) throw new NullReferenceException("User entry can't be null");
+
+        (string Token, string TokenHash) refresh = Tokenizer.CreateRefresh();
+
+        string access = Tokenizer.CreateAccess(
+            sessionInfo.UserEntry.UniqueName,
+            sessionInfo.UserEntryId,
+            sessionInfo.Id);
+
+        return new TokenResponse(
+            new(refresh.TokenHash, sessionInfo.Id, GetLifeTime()),
+            new(access, refresh.Token, sessionInfo.ToDTO())
+            );
     }
 }

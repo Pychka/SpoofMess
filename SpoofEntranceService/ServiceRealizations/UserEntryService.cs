@@ -2,29 +2,27 @@
 using CommonObjects.Requests;
 using CommonObjects.Responses;
 using CommonObjects.Results;
-using DataHelpers.Services;
-using Microsoft.EntityFrameworkCore;
 using SecurityLibrary;
 using SpoofEntranceService.Models;
+using SpoofEntranceService.Repositories;
 using SpoofEntranceService.Services;
+using SpoofEntranceService.Validators;
 
 namespace SpoofEntranceService.ServiceRealizations
 {
     public class UserEntryService(
-        SpoofEntranceServiceDbContext context,
-        IRepository repository,
+        UserRepository repository,
+        UserEntryValidator validator,
         ILoggerService logService,
         ITokenService tokenService,
         ISessionService sessionService
     ) : IUserEntryService
     {
-        private readonly IRepository _repository = repository;
+        private readonly UserRepository _repository = repository;
+        private readonly UserEntryValidator _validator = validator;
         private readonly ILoggerService _logService = logService;
         private readonly ISessionService _sessionService = sessionService;
         private readonly ITokenService _tokenService = tokenService;
-        private readonly SpoofEntranceServiceDbContext _context = context;
-        private const string USER_KEY = "userEntry:";
-        private static readonly TimeSpan UserEntryExpiration = TimeSpan.FromMinutes(10);
 
         public async Task<Result<UserAuthorizeResponse>> Authorization(
             UserAuthorizeRequest request,
@@ -32,19 +30,16 @@ namespace SpoofEntranceService.ServiceRealizations
         {
             try
             {
-                UserEntry? userEntry = await _repository.GetAsync(
-                $"{USER_KEY}{request.Login}",
-                async () =>
-                    await _context.UserEntries.FirstOrDefaultAsync(x => !x.IsDeleted && x.UniqueName == request.Login),
-                    UserEntryExpiration);
+                UserEntry? user = await _repository.GetByLogin(request.Login);
 
-                if (userEntry is null)
-                    return Result<UserAuthorizeResponse>.NotFoundResult("Invalid login");
+                Result result = _validator.IsActive(user);
+                if (!result.Success)
+                    return Result<UserAuthorizeResponse>.From(result);
 
-                if (!Hasher.VerifyPassword(request.Password, userEntry.PasswordHash))
+                if (!Hasher.VerifyPassword(request.Password, user!.PasswordHash))
                     return Result<UserAuthorizeResponse>.ErrorResult("Invalid password", 403);
 
-                await _sessionService.StartSession(userEntry, sessionInfo);
+                await _sessionService.StartSession(user, sessionInfo);
 
                 return await _tokenService.Create(sessionInfo);
             }
@@ -59,15 +54,10 @@ namespace SpoofEntranceService.ServiceRealizations
         {
             try
             {
-                UserEntry? user = await _repository.GetAsync(
-                    $"{USER_KEY}{request.Login}",
-                    async () => await _context.UserEntries.FirstOrDefaultAsync(x => x.UniqueName == request.Login),
-                    UserEntryExpiration);
+                UserEntry? user = await _repository.GetByLogin(request.Login);
 
-                if (user is { IsDeleted: true })
+                if (user is { IsDeleted: false })
                     return Result<UserAuthorizeResponse>.ErrorResult("Login is busy");
-
-                user?.UniqueName = "";
 
                 UserEntry newUser = new()
                 {
@@ -75,19 +65,7 @@ namespace SpoofEntranceService.ServiceRealizations
                     PasswordHash = Hasher.HashPassword(request.Password)
                 };
 
-                List<(string key, UserEntry obj, EntityState state)> entities = [(
-                            $"{USER_KEY}{newUser.UniqueName}",
-                            newUser,
-                            EntityState.Added
-                        )];
-                if (user is not null)
-                    entities.Add((
-                        $"{USER_KEY}{newUser.UniqueName}",
-                        user,
-                        EntityState.Modified));
-
-
-                await _repository.ChangeStates(_context, entities.ToArray(), UserEntryExpiration);
+                await _repository.Change(newUser, user);
 
                 await _sessionService.StartSession(newUser, sessionInfo);
 
@@ -104,21 +82,15 @@ namespace SpoofEntranceService.ServiceRealizations
         {
             try
             {
-                UserEntry? user = await _repository.GetAsync(
-                    $"{USER_KEY}{sessionInfo.UserEntry.UniqueName}",
-                    async () => await _context.UserEntries.FirstOrDefaultAsync(x => x.UniqueName == sessionInfo.UserEntry.UniqueName),
-                    UserEntryExpiration);
-                if (user is null)
-                    return Result.NotFoundResult($"User not found");
+                UserEntry? user = await _repository.GetByIdAsync(sessionInfo.UserEntryId);
+
+                Result result = _validator.IsActive(user);
+                if (!result.Success)
+                    return result;
 
                 await _sessionService.EndSessions(sessionInfo.Id, true);
-                await _repository.ChangeState(
-                    _context,
-                    $"{USER_KEY}{user.UniqueName}",
-                    user,
-                    EntityState.Deleted,
-                    UserEntryExpiration);
-                return Result.SuccessResult("Ok");
+                await _repository.SoftDeleteAsync(user!);
+                return Result.OkResult("Ok");
             }
             catch(Exception ex)
             {
