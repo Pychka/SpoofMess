@@ -5,7 +5,7 @@ using SpoofSettingsService.Models;
 
 namespace SpoofSettingsService.Repositories;
 
-public class ChatRepository(ICacheService cache, SpoofSettingsServiceContext context, ProcessQueueTasksService tasksService) : Repository<Chat, long>(cache, context, tasksService)
+public class ChatRepository(ICacheService cache, SpoofSettingsServiceContext context, ProcessQueueTasksService tasksService) : Repository<Chat, Guid>(cache, context, tasksService)
 {
     public async Task<Chat?> GetByUniqueName(string name) =>
         await GetAsync(name, async () => await context.Chats.FirstOrDefaultAsync(x => x.UniqueName == name));
