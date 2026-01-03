@@ -16,7 +16,7 @@ public class ChatService(ChatRepository chatRepository, UserRepository userRepos
     private readonly UserRepository _userRepository = userRepository;
     private readonly Repository<ChatType, long> _chatTypeRepository = chatTypeRepository;
 
-    public async ValueTask<Result> ChangeSettings(ChangeChatSettingsRequest request, long userId)
+    public async ValueTask<Result> ChangeSettings(ChangeChatSettingsRequest request, Guid userId)
     {
         UserChatResult result = await GetUserAndChat(userId, request.Id);
         if (!result.Result.Success)
@@ -27,7 +27,7 @@ public class ChatService(ChatRepository chatRepository, UserRepository userRepos
     }
 
 
-    public async ValueTask<Result> CreateChat(CreateChatRequest request, long userId)
+    public async ValueTask<Result> CreateChat(CreateChatRequest request, Guid userId)
     {
         User? user = await _userRepository.GetByIdAsync(userId);
         Result result = UserValidator.Validate(user);
@@ -49,7 +49,7 @@ public class ChatService(ChatRepository chatRepository, UserRepository userRepos
         return Result.OkResult();
     }
 
-    public async ValueTask<Result> DeleteChat(long chatId, long userId)
+    public async ValueTask<Result> DeleteChat(Guid chatId, Guid userId)
     {
         UserChatResult result = await GetUserAndChat(userId, chatId);
         if (!result.Result.Success)
@@ -59,7 +59,7 @@ public class ChatService(ChatRepository chatRepository, UserRepository userRepos
         return Result.OkResult();
     }
 
-    private async Task<UserChatResult> GetUserAndChat(long userId, long chatId)
+    public async Task<UserChatResult> GetUserAndChat(Guid userId, Guid chatId)
     {
         User? user = await _userRepository.GetByIdAsync(userId);
 
