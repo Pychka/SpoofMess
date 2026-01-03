@@ -49,7 +49,7 @@ namespace SpoofEntranceService.ServiceRealizations
                 return Result<UserAuthorizeResponse>.ErrorResult(ex.Message);
             }
         }
-
+        [Obsolete("This method does not have the ability to correctly create an account in the entire system.", true)]
         public async Task<Result<UserAuthorizeResponse>> Registration(RegistrationRequest request, SessionInfo sessionInfo)
         {
             try
