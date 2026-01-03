@@ -2,7 +2,7 @@
 
 namespace SpoofSettingsService.Models;
 
-public partial class User : IdentifiedEntity<long>
+public partial class User : IdentifiedEntity<Guid>
 {
     public DateTime WasOnline { get; set; }
 

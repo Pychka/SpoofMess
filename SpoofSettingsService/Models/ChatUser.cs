@@ -2,11 +2,11 @@
 
 namespace SpoofSettingsService.Models;
 
-public partial class ChatUser : IdentifiedEntity<long>
+public partial class ChatUser : IdentifiedEntity<Guid>
 {
-    public long ChatId { get; set; }
+    public Guid ChatId { get; set; }
 
-    public long UserId { get; set; }
+    public Guid UserId { get; set; }
 
     public long RoleTypeId { get; set; }
 

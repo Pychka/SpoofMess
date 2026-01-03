@@ -2,11 +2,11 @@
 
 namespace SpoofSettingsService.Models;
 
-public partial class Chat : IdentifiedEntity<long>, IChangeable
+public partial class Chat : IdentifiedEntity<Guid>, IChangeable
 {
     public long ChatTypeId { get; set; }
 
-    public long? OwnerId { get; set; }
+    public Guid? OwnerId { get; set; }
 
     public string? ChatName { get; set; }
 
@@ -28,7 +28,7 @@ public partial class Chat : IdentifiedEntity<long>, IChangeable
 
     public Chat() { }
 
-    public Chat(long chatTypeId, long? ownerId, string? chatName, bool? isPublic, string? uniqueName, DateTime createdAt, DateTime lastModified)
+    public Chat(long chatTypeId, Guid? ownerId, string? chatName, bool? isPublic, string? uniqueName, DateTime createdAt, DateTime lastModified)
     {
         ChatTypeId = chatTypeId;
         OwnerId = ownerId;
