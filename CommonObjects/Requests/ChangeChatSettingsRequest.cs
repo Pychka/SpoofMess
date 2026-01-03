@@ -2,7 +2,7 @@
 
 public class ChangeChatSettingsRequest
 {
-    public long Id { get; set; }
+    public Guid Id { get; set; }
 
     public long? ChatTypeId { get; set; }
 
