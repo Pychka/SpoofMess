@@ -31,7 +31,7 @@ public class ChatValidator
         return Result.OkResult();
     }
 
-    public Result ValidateChatAndOwner(Chat? chat, long userId)
+    public Result ValidateChatAndOwner(Chat? chat, Guid userId)
     {
         if (chat is null)
             return Result.NotFoundResult("Chat not exist");
