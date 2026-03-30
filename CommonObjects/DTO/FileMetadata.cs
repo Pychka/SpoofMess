@@ -1,6 +1,7 @@
 ﻿namespace CommonObjects.DTO;
 
 public record FileMetadata(
-        Guid Id,
+        byte[] Token,
+        byte[] Id,
         string OriginalName,
         long Size);

@@ -28,7 +28,9 @@ public class Result<T>
     [Obsolete("Используйте специализированные методы.")]
     [EditorBrowsable(EditorBrowsableState.Never)]
     public static Result<T> SuccessResult(T body, string? message = "OK", int statusCode = 200) =>
-        GetResult(success: true, message: message, statusCode: statusCode, body: body);
+        body is null 
+        ? throw new NullReferenceException("Body can't be empty if statusCode success. Use Result if you don't need send body with response") 
+        : GetResult(success: true, message: message, statusCode: statusCode, body: body);
 
     #pragma warning disable CS0618
     public static Result<T> OkResult(T body) =>
