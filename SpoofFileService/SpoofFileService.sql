@@ -67,7 +67,6 @@ BEGIN
 END;
 $$ language plpgsql;
 
-
 create or replace function "FindOrCreateFile"(
 	id uuid,
 	l1 bytea, 
@@ -75,14 +74,15 @@ create or replace function "FindOrCreateFile"(
 	l3 bytea, 
 	extensionId smallint, 
 	filePath text, 
-	fileSize bigint)
+	fileSize bigint,
+	fileMetadata text)
 returns uuid as
 $$
 declare
 	inserted_id uuid;
 begin
-	INSERT INTO "FileObject"("Id", "L1", "L2", "L3", "ExtensionId", "Path", "Size")
-    VALUES (id, l1, l2, l3, extensionId, filePath, fileSize)
+	INSERT INTO "FileObject"("Id", "L1", "L2", "L3", "ExtensionId", "Path", "Size", "Metadata")
+    VALUES (id, l1, l2, l3, extensionId, filePath, fileSize, fileMetadata::jsonb)
     ON CONFLICT ("L3", "Size", "ExtensionId") DO NOTHING
     RETURNING "Id" INTO inserted_id;
 

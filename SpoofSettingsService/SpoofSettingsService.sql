@@ -104,7 +104,7 @@ create table "FileMetadata" (
     "Id" uuid constraint "PK_FileMetadata_Id" primary key,
     "Size" bigint not null,
 	"Category" varchar(20) not null,
-	"Metada" jsonb,
+	"Metadata" jsonb,
 	"IsDeleted" boolean not null default false
 );
 
