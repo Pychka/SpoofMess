@@ -29,14 +29,6 @@ public class CachedIdentifiedRepository<T, TKey>(
             throw new Exception("DataBase error", ex);
         }
     }
-    protected override string GetKey(T entity) =>
-        $"{entity.GetType().Name.ToLower()}:{entity.Id}";
-
-    protected string GetEntityKey<TEntity, TEntityKey>(TEntity entity) where TEntity : IdentifiedEntity<TEntityKey> =>
-        $"{entity.GetType().Name.ToLower()}:{entity.Id}";
-
-    protected virtual string GetKey(TKey id) =>
-        $"{typeof(T).Name.ToLower()}:{id}";
 
     public async Task<bool> DeleteById(TKey id)
     {
@@ -53,4 +45,13 @@ public class CachedIdentifiedRepository<T, TKey>(
             throw new Exception("DataBase error", ex);
         }
     }
+
+    protected override string GetKey(T entity) =>
+        $"{entity.GetType().Name.ToLower()}:{entity.Id}";
+
+    protected string GetEntityKey<TEntity, TEntityKey>(TEntity entity) where TEntity : IdentifiedEntity<TEntityKey> =>
+        $"{entity.GetType().Name.ToLower()}:{entity.Id}";
+
+    protected virtual string GetKey(TKey id) =>
+        $"{typeof(T).Name.ToLower()}:{id}";
 }

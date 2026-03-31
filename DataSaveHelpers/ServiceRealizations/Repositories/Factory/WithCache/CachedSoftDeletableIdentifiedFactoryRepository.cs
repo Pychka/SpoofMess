@@ -47,4 +47,26 @@ public class CachedSoftDeletableIdentifiedFactoryRepository<T, TKey, TDbContext>
             throw new Exception("DataBase error", ex);
         }
     }
+    public async Task<bool> SoftExecuteDelete(TKey id)
+    {
+        await using DbContext dbContext = await _factory.CreateDbContextAsync();
+        bool result = await dbContext.Set<T>()
+            .Where(x => x.Id!.Equals(id))
+            .ExecuteUpdateAsync(x =>
+                x.SetProperty(
+                    x => x.IsDeleted,
+                    true)) > 0;
+        if (result)
+        {
+            T? entity = await _cache.Get<T>(GetKey(id));
+            if (entity is not null)
+            {
+                entity.IsDeleted = true;
+                SaveToCache(GetKey(id), entity);
+            }
+
+            return true;
+        }
+        return false;
+    }
 }

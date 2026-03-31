@@ -34,4 +34,12 @@ public class SoftDeletableIdentifiedRepository<T, TKey>(DbContext context) : Ide
             throw new Exception("DataBase error", ex);
         }
     }
+
+    public async Task<bool> SoftExecuteDelete(TKey id) =>
+        await _set
+            .Where(x => x.Id!.Equals(id))
+            .ExecuteUpdateAsync(x =>
+                x.SetProperty(
+                    x => x.IsDeleted,
+                    true)) > 0;
 }
