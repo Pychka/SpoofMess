@@ -6,7 +6,7 @@ using SpoofEntranceService.Services.Publishers;
 
 namespace SpoofEntranceService.ServiceRealizations.Publishers;
 
-public class UserPublisherService2(
+public class UserPublisherService(
         RabbitMQSettings settings,
         ILoggerService loggerService,
         ISerializer serializer
@@ -22,11 +22,5 @@ public class UserPublisherService2(
     {
         await Publish("user.success.created", createUser);
         Console.WriteLine($"{createUser.UserId} publish");
-    }
-
-    public async Task Delete(CreateUser deleteUser)
-    {
-        await Publish("user.success.deleted", deleteUser);
-        Console.WriteLine($"{deleteUser.UserId} deleted");
     }
 }

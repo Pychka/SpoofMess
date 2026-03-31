@@ -1,11 +1,10 @@
 ﻿using CommonObjects.Results;
+using DataSaveHelpers.Services;
 using SpoofEntranceService.Models;
 
 namespace SpoofEntranceService.Services.Validators;
 
-public interface IUserEntryValidator
+public interface IUserEntryValidator : ISoftDeletableValidator<UserEntry>
 {
-    public Result IsActive(UserEntry? user);
-
     public Result HisIsActive(UserEntry? user);
 }

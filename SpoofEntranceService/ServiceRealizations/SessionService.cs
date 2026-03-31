@@ -29,7 +29,6 @@ public class SessionService(
                 return result;
 
             SessionInfo? deletedSessionInfo = await _sessionRepository.GetByIdAsync(request.SessionId);
-
             result = _sessionValidator.IsInvalidSession(deletedSessionInfo);
             if (!result.Success)
                 return result;
@@ -45,7 +44,9 @@ public class SessionService(
         }
     }
 
-    public async Task<Result> Exit(ExitRequest request, Guid sessionInfoId)
+    public async Task<Result> Exit(
+        ExitRequest request,
+        Guid sessionInfoId)
     {
         try
         {
@@ -66,7 +67,9 @@ public class SessionService(
         }
     }
 
-    public async Task<Result<List<CommonObjects.DTO.SessionInfo>>> GetSessions(Guid userId, Guid sessionInfoId)
+    public async Task<Result<List<CommonObjects.DTO.SessionInfo>>> GetSessions(
+        Guid userId, 
+        Guid sessionInfoId)
     {
         try
         {
@@ -84,7 +87,10 @@ public class SessionService(
         }
     }
 
-    public async Task<Result> StartSession(HttpContext context, UserEntry userEntry, SessionInfo sessionInfo)
+    public async Task<Result> StartSession(
+        HttpContext context, 
+        UserEntry userEntry, 
+        SessionInfo sessionInfo)
     {
         try
         {
@@ -104,7 +110,9 @@ public class SessionService(
         }
     }
 
-    public async Task<Result> EndSessions(Guid id, bool withCurrent = false)
+    public async Task<Result> EndSessions(
+        Guid id, 
+        bool withCurrent = false)
     {
         try
         {
@@ -114,7 +122,10 @@ public class SessionService(
             if (!result.Success)
                 return result;
 
-            await _sessionRepository.SoftDeleteSessionsByUserId(session!.UserEntryId, withCurrent, session.Id);
+            await _sessionRepository.SoftDeleteSessionsByUserId(
+                session!.UserEntryId, 
+                withCurrent, 
+                session.Id);
 
             return Result.OkResult("Ok");
         }

@@ -11,7 +11,10 @@ using SpoofEntranceService.Services.Validators;
 
 namespace SpoofEntranceService.ServiceRealizations;
 
-public class TokenService(ITokenRepository repository, ITokenValidator tokenValidator, ILoggerService loger) : ITokenService
+public class TokenService(
+    ITokenRepository repository, 
+    ITokenValidator tokenValidator, 
+    ILoggerService loger) : ITokenService
 {
     private readonly ITokenRepository _repository = repository;
     private readonly ILoggerService _logService = loger;
@@ -21,7 +24,6 @@ public class TokenService(ITokenRepository repository, ITokenValidator tokenVali
     {
         return Result<TokenResponse>.OkResult(CreateResponse(sessionInfo));
     }
-
 
     public async Task<Result<TokenResponse>> CreateAndSave(SessionInfo sessionInfo)
     {
@@ -68,8 +70,6 @@ public class TokenService(ITokenRepository repository, ITokenValidator tokenVali
         }
     }
 
-    private static DateTime GetLifeTime() => DateTime.UtcNow.AddDays(30);
-
     public static TokenResponse CreateResponse(SessionInfo sessionInfo)
     {
         if (sessionInfo.UserEntry is null) throw new NullReferenceException("User entry can't be null");
@@ -86,4 +86,6 @@ public class TokenService(ITokenRepository repository, ITokenValidator tokenVali
             new(access, refresh.Token, sessionInfo.ToDTO())
             );
     }
+
+    private static DateTime GetLifeTime() => DateTime.UtcNow.AddDays(30);
 }
