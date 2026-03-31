@@ -68,6 +68,8 @@ public partial class SpoofFileServiceContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("timestamp without time zone");
 
+            entity.Property(e => e.Metadata).HasColumnType("jsonb");
+
             entity.HasOne(d => d.Extension).WithMany(p => p.FileObjects)
                 .HasForeignKey(d => d.ExtensionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
