@@ -5,6 +5,8 @@ namespace SpoofMessageService.Services.Repositories;
 
 public interface IMessageRepository : ISoftDeletableIdentifiedRepository<Message, Guid>
 {
+    public Task UploadAttachments(Message message);
+
     public Task<List<Message>> GetMessagesAfterDate(
             Guid chatId, 
             DateTime after,

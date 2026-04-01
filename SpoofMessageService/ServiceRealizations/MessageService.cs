@@ -106,6 +106,9 @@ public class MessageService(
             CreateMessageRequest request,
             Guid userId)
     {
+        if(string.IsNullOrWhiteSpace(request.Text) && request.Attachments is null || request.Attachments.Count == 0)
+            return Result<IntermediateMessage>.BadRequest("At least one field is required: Text or Attachments");
+
         try
         {
             Result<ChatUser> chatUserResult = await _chatUserService.GetAndCheckPermission(
@@ -115,7 +118,6 @@ public class MessageService(
                 );
             if (!chatUserResult.Success)
                 return Result<IntermediateMessage>.From(chatUserResult);
-
 
             Message message = request.Set(
                     userId
@@ -128,14 +130,12 @@ public class MessageService(
                 if (!_fileTokenService.IsValid(attachmentDTO.Token, userId, out Guid fileId))
                 {
                     tokenSource.Cancel();
-                    _loggerService.Fatal($"Invalid token");
                     return;
                 }
                 Result<FileMetadatum> result = await _fileMetadatumService.Get(fileId);
                 if (!result.Success)
                 {
                     tokenSource.Cancel();
-                    _loggerService.Fatal(result.Error ?? result.Message);
                     return;
                 }
                 attachments.Add(attachmentDTO.Set(fileId, result.Body!));
@@ -151,6 +151,7 @@ public class MessageService(
                 chatUserResult.Body.User.Login,
                 chatUserResult.Body.User.Name,
                 chatUserResult.Body.User.AvatarId,
+                chatUserResult.Body.User.OriginalFileName,
                 message.Text,
                 message.SentAt,
                 [..

@@ -49,7 +49,6 @@ public class ChatHub(
         await base.OnDisconnectedAsync(exception);
     }
 
-
     public async Task SendMessage(CreateMessageRequest request)
     {
         Guid userId = ClaimService.GetUserId(Context.User);
@@ -65,7 +64,7 @@ public class ChatHub(
                 result.Body.SenderName,
                 null,
                 null,
-                null,
+                result.Body.OriginalFileName,
                 result.Body.Text,
                 result.Body.SendAt,
                 []
@@ -87,7 +86,14 @@ public class ChatHub(
                             UserAvatarId = result.Body.SenderAvatar is null
                             ? null
                             : Hasher.GetKey(result.Body.SenderAvatar.Value.ToByteArray()),
-                            Attachments = [.. result.Body.Attachments.Select(x => new CommonObjects.Requests.Attachments.Attachment(Hasher.GetKey(x.Id.ToByteArray()), _fileTokenService.CreateToken(user.Key2, x.Id), x.OriginalFileName, x.Category, x.FileSize))]
+                            Attachments = [.. result.Body.Attachments.Select(x => 
+                            new CommonObjects.Requests.Attachments.Attachment(
+                                Hasher.GetKey(x.Id.ToByteArray()),
+                                _fileTokenService.CreateToken(user.Key2, x.Id),
+                                x.OriginalFileName,
+                                x.Category,
+                                x.Metadata,
+                                x.FileSize))]
                         }, token);
                     }
                 }
