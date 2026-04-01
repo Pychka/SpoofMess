@@ -8,8 +8,8 @@ A cross-platform messenger with any type of chats, stickers/emoji - that's just 
     - [Docker](https://www.docker.com/get-started/)
 2. Clone this project to your pc:
     ```bash
-    git clone <repository-url>
-    cd <project-folder>
+    git clone https://github.com/SpoofCorp/SpoofMess
+    cd ./SpoofMess
     ```
 3. Open cmd/powershell/terminal in root project
 4. Write 
