@@ -122,7 +122,6 @@ public class UserService(
                 Login = createUser.Login
             };
             await _userRepository.AddAsync(user);
-            await _userMessageBrokerService.ConfirmCreate(createUser);
             return Result.OkResult();
         }
         catch (Exception ex)

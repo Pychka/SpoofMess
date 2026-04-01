@@ -2,7 +2,6 @@
 using CommunicationLibrary;
 using CommunicationLibrary.Communication;
 using CommunicationLibrary.ServiceRealizations;
-using CommunicationLibrary.Services;
 using SpoofSettingsService.Services;
 using SpoofSettingsService.Services.MessageBrokers;
 
@@ -10,30 +9,26 @@ namespace SpoofSettingsService.ServiceRealizations.MessageBrokers.Consumers;
 
 public class UserConsumerService(
     RabbitMQSettings settings,
-    ISerializer serializer, 
+    ISerializer serializer,
     ILoggerService loggerService,
-    IInjectionService injectionService) : ConsumerService(
-        settings, 
-        serializer, 
+    IServiceScopeFactory serviceScopeFactory) : ConsumerService(
+        settings,
+        serializer,
         loggerService), IUserConsumerService
 {
     protected override string BaseQueueName => "settings.user";
     protected override string Exchange => "entrance-service";
 
-    protected readonly IInjectionService _injectionService = injectionService;
+    private readonly IServiceScopeFactory _serviceScopeFactory = serviceScopeFactory;
 
     protected async Task ConfirmAdded() =>
         await ConsumeFromQueueAsync<CreateUser>(
             $"success.created",
             $"user.success.created",
-            async (createUser)  =>
+            async (createUser) =>
                 {
                     _loggerService.Info($"{createUser.UserId} was created");
-
-                   /* await _injectionService.Invoke<IUserService, Task>(
-                        async (userService) =>
-                            await userService.ConfirmCreated(createUser)
-                        );*/
+                    await _serviceScopeFactory.CreateScope().ServiceProvider.GetRequiredService<IUserService>().Create(createUser);
                 });
 
     protected async Task ConfirmDeleted() =>
@@ -43,11 +38,7 @@ public class UserConsumerService(
             async (createUser) =>
             {
                 _loggerService.Info($"{createUser.UserId} was deleted");
-
-                await _injectionService.Invoke<IUserService, Task>(
-                        async (userService) =>
-                            await userService.Delete(createUser.UserId)
-                        );
+                await _serviceScopeFactory.CreateScope().ServiceProvider.GetRequiredService<IUserService>().Delete(createUser.UserId);
             });
 
     public override async Task Initialize()

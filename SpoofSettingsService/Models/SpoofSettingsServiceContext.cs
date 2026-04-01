@@ -253,7 +253,7 @@ public partial class SpoofSettingsServiceContext : DbContext
         modelBuilder.Entity<FileMetadatum>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK_FileMetadata_Id");
-
+            entity.Property(e => e.Metadata).HasColumnType("jsonb");
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Category).HasMaxLength(20);
         });
