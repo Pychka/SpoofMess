@@ -59,6 +59,6 @@ public class LocalFileWorkerService(IOptions<FileSettings> fileSettings) : IFile
     {
         if (!Directory.Exists(_fileSettings.StoragePath))
             Directory.CreateDirectory(_fileSettings.StoragePath);
-        return Path.Combine(_fileSettings.StoragePath, $"{Path.GetFileNameWithoutExtension(path)}{Guid.NewGuid()}.{Path.GetExtension(path)}");
+        return Path.Combine(_fileSettings.StoragePath, $"{Path.GetFileNameWithoutExtension(path)}{Path.GetExtension(path)}");
     }
 }

@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
 using SecurityLibrary;
 using SpoofFileService.Services;
-using static System.Collections.Specialized.BitVector32;
 
 namespace SpoofFileService.Controllers;
 

@@ -1,11 +1,11 @@
 using AdditionalHelpers.ServiceRealizations;
-using AdditionalHelpers.Services;
 using Microsoft.AspNetCore.Http.Features;
 using SecurityLibrary;
 using SecurityLibrary.Tokens;
 using SettingsHelper;
 using SpoofFileParser;
 using SpoofFileParser.FileMetadataParser;
+using SpoofFileParser.FileMetadataParser.Audio;
 using SpoofFileService;
 using SpoofFileService.Models;
 using SpoofFileService.ServiceRealizations;
@@ -47,14 +47,24 @@ builder.Services.Configure<FormOptions>(options =>
 {
     options.MultipartBodyLengthLimit = 1024L * 1024 * 1024 * 10; // 500 МБ
 });
-ParserFactory factory = new([
-    new ImageMetadataParser(new() {
-                    ["jpeg"] = new(0, 2, 2, 2, true, [[0xFF, 0xC0], [0xFF, 0xC1], [0xFF, 0xC2]], 5),
-                    ["jpg"] = new(0, 2, 2, 2, true, [[0xFF, 0xC0], [0xFF, 0xC1], [0xFF, 0xC2]], 5),
-                    ["png"] = new(16, 4, 20, 4, true),
-                    ["bmp"] = new(18, 4, 22, 4, false),
-                    ["gif"] = new(6, 2, 8, 2, false),
-                })]);
+ParserFactory factory = new(
+    new()
+    {
+        [FileType.Image] =
+            new ImageMetadataParser(new()
+            {
+                ["jpeg"] = new(0, 2, 2, 2, true, [[0xFF, 0xC0], [0xFF, 0xC1], [0xFF, 0xC2]], 5),
+                ["jpg"] = new(0, 2, 2, 2, true, [[0xFF, 0xC0], [0xFF, 0xC1], [0xFF, 0xC2]], 5),
+                ["png"] = new(16, 4, 20, 4, true),
+                ["bmp"] = new(18, 4, 22, 4, false),
+                ["gif"] = new(6, 2, 8, 2, false),
+            }),
+        [FileType.Audio] = new AudioMetadataParser(new()
+        {
+            ["mp3"] = new Mp3MetadataParser()
+        })
+    },
+    new FileMetadataParser());
 JsonSerializerService serializer = new();
 
 builder.Services.AddSingleton<IFileClassifier>(new FileClassifier(factory, await serializer.Deserialize<ExtensionRoadMap[]>(File.OpenRead("startup\\FileExtensions.json"))));
