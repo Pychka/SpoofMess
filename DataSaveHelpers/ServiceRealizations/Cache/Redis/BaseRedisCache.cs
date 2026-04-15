@@ -16,11 +16,14 @@ public class BaseRedisCache(IConnectionMultiplexer redis, ILoggerService loggerS
         try
         {
             await _database.StringDeleteAsync(key, When.Always);
+
+#if DEBUG
             _loggerService.Debug($"Delete by {key} in redis value");
+#endif
         }
-        catch (Exception ex)
+        catch
         {
-            throw new Exception(ex.Message);
+            throw;
         }
     }
 
@@ -30,11 +33,14 @@ public class BaseRedisCache(IConnectionMultiplexer redis, ILoggerService loggerS
         {
             string json = _serializer.Serialize(value);
             await _database.StringSetAsync(key, json, Expiration, When.Always);
+
+#if DEBUG
             _loggerService.Debug($"Save by {key} to redis");
+#endif
         }
-        catch (Exception ex)
+        catch
         {
-            throw new Exception(ex.Message);
+            throw;
         }
     }
 
@@ -46,16 +52,14 @@ public class BaseRedisCache(IConnectionMultiplexer redis, ILoggerService loggerS
             if (string.IsNullOrEmpty(redisValue.Value))
                 return default;
 
+#if DEBUG
             _loggerService.Debug($"Get by {key} from redis");
+#endif
             return _serializer.Deserialize<T>(redisValue.Value.ToString());
         }
-        catch (InvalidDataException ex)
+        catch
         {
-            throw new InvalidDataException(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            throw new Exception(ex.Message);
+            throw;
         }
     }
 
@@ -70,9 +74,9 @@ public class BaseRedisCache(IConnectionMultiplexer redis, ILoggerService loggerS
                 await Save(getKey(value), value);
             }
         }
-        catch (Exception ex)
+        catch
         {
-            throw new Exception(ex.Message);
+            throw;
         }
     }
 
@@ -82,9 +86,9 @@ public class BaseRedisCache(IConnectionMultiplexer redis, ILoggerService loggerS
         {
             await _database.StringSetAsync(valuePairs);
         }
-        catch (Exception ex)
+        catch
         {
-            throw new Exception(ex.Message);
+            throw;
         }
 
     }
