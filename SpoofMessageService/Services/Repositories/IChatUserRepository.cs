@@ -8,4 +8,6 @@ public interface IChatUserRepository : IDoubleIdentifiedRepository<ChatUser, Gui
     public Task Delete(Guid chatId, Guid userId);
 
     public Task<List<ChatUser>> GetManyByChatId(Guid chatId);
+
+    public Task<List<ChatUser>> GetManyByUserId(Guid userId);
 }

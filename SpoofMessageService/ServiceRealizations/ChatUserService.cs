@@ -126,4 +126,22 @@ public class ChatUserService(
             return Result<List<ChatUser>>.ErrorResult("An error occurred while getting chat users.");
         }
     }
+
+    public async Task<Result<List<ChatUser>>> GetChats(Guid userId)
+    {
+        try
+        {
+            List<ChatUser> chatUsers = await _chatUserRepository.GetManyByUserId(userId);
+            Result result = _chatUserValidator.IsAvailableCollection(chatUsers);
+            if (!result.Success)
+                return Result<List<ChatUser>>.From(result);
+
+            return Result<List<ChatUser>>.OkResult(chatUsers!);
+        }
+        catch (Exception ex)
+        {
+            _loggerService.Error($"An error occurred while getting chat users: {ex.Message}");
+            return Result<List<ChatUser>>.ErrorResult("An error occurred while getting chat users.");
+        }
+    }
 }

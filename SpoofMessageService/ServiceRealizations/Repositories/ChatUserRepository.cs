@@ -37,4 +37,10 @@ public class ChatUserRepository(
         await using SpoofMessageServiceContext context = await _factory.CreateDbContextAsync();
         return await context.ChatUsers.Where(x => x.Key1 == chatId).ToListAsync();
     }
+
+    public async Task<List<ChatUser>> GetManyByUserId(Guid userId)
+    {
+        await using SpoofMessageServiceContext context = await _factory.CreateDbContextAsync();
+        return await context.ChatUsers.Where(x => x.Key2 == userId).Include(x => x.Chat).ToListAsync();
+    }
 }

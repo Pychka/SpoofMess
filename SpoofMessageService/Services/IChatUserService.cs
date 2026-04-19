@@ -11,6 +11,8 @@ public interface IChatUserService
 
     public Task<Result<List<ChatUser>>> GetMembers(Guid chatId);
 
+    public Task<Result<List<ChatUser>>> GetChats(Guid userId);
+
     public Task<Result> Update(UpdateChatUser updateChatUser);
 
     public Task<Result> Add(CreateChatUser createChatUser);
