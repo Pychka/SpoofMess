@@ -59,7 +59,8 @@ builder.Services.AddScoped<IChatRepository, ChatRepository>();
 builder.Services.AddScoped<IAttachmentRepository, AttachmentRepository>();
 builder.Services.AddTransient<IFileTokenService, FileTokenService>();
 
-builder.Services.AddSingleton<IUserEventsService, UserEventsService>();
+builder.Services.AddSingleton<IUserEventService, UserEventService>();
+builder.Services.AddSingleton<IMessageEventService, MessageEventService>();
 
 builder.Services.AddSingleton(
     builder.Configuration.GetSection("TokenHeader")
