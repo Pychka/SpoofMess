@@ -1,5 +1,6 @@
 ﻿using CommonObjects.DTO;
 using CommonObjects.Requests.Messages;
+using CommonObjects.Responses;
 using CommonObjects.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
@@ -10,6 +11,7 @@ using SpoofMessageService.Services;
 using System.Collections.Concurrent;
 
 namespace SpoofMessageService;
+
 
 [Authorize]
 public class ChatHub(
@@ -24,6 +26,7 @@ public class ChatHub(
     private readonly IUserService _userService = userService;
     private readonly IFileTokenService _fileTokenService = fileTokenService;
     private readonly static ConcurrentDictionary<Guid, ConcurrentDictionary<Guid, UserConnection>> Users = [];
+
     public override async Task OnConnectedAsync()
     {
         Guid userId = ClaimService.GetUserId(Context.User);
@@ -34,6 +37,12 @@ public class ChatHub(
             sessions.TryAdd(sessionId, new(Context.ConnectionId, sessionId));
         else
             Users.TryAdd(userId, new() { [sessionId] = new(Context.ConnectionId, sessionId) });
+        Result<List<ChatUser>> chatUsers = await _chatUserService.GetChats(userId);
+        if (chatUsers.Success)
+            foreach (var chatUser in chatUsers.Body!)
+            {
+                await Groups.AddToGroupAsync(Context.ConnectionId, $"chat-{chatUser.Chat.UniqueName}");
+            }
         await base.OnConnectedAsync();
     }
 
@@ -53,22 +62,40 @@ public class ChatHub(
     {
         Guid userId = ClaimService.GetUserId(Context.User);
 
-        Result<IntermediateMessage> result = await _messageService.SendMessage(request, userId);
+        Result<MessageDTO> result = await _messageService.SendMessage(request, userId);
         if (!result.Success)
-            return;
+            throw new ApplicationException(result.Error ?? result.Message);
+    }
+
+    public async Task DeleteMessage(Guid chatId, Guid messageId)
+    {
+        Guid userId = ClaimService.GetUserId(Context.User);
+
+        Result result = await _messageService.DeleteMessage(messageId, chatId, userId);
+    }
+
+    public async Task EditMessage(EditMessageRequest request)
+    {
+        Guid userId = ClaimService.GetUserId(Context.User);
+
+        Result<EditMessageResponse> result = await _messageService.EditMessage(request, userId);
+
+        if (!result.Success)
+            throw new ApplicationException(result.Error ?? result.Message);
         Result<List<ChatUser>> users = await _chatUserService.GetMembers(result.Body!.ChatId);
-        MessageDTO message = new(
+        EditMessageResponse message = new(
                 result.Body!.Id,
                 result.Body.ChatId,
                 result.Body.SenderLogin,
                 result.Body.SenderName,
                 null,
                 null,
-                result.Body.OriginalFileName,
+                result.Body.OriginalAvatarName,
                 result.Body.Text,
-                result.Body.SendAt,
+                result.Body.LastModified,
                 []
             );
+        Guid? avatarId = result.Body.UserAvatarId is null ? null : new(result.Body.UserAvatarId);
         if (users.Success)
             await Parallel.ForEachAsync(users.Body!, async (user, token) =>
             {
@@ -76,41 +103,28 @@ public class ChatHub(
                 {
                     foreach (var connection in connections.Values)
                     {
-                        await Clients.Client(connection.Ip).SendAsync("new-message", message with
+                        await Clients.Client(connection.Ip).SendAsync("edited-message", message with
                         {
-                            UserAvatarToken = result.Body.SenderAvatar is null
+                            UserAvatarToken = avatarId is null
                             ? null
                             : _fileTokenService.CreateToken(
                                 user.Key2,
-                                result.Body.SenderAvatar.Value),
-                            UserAvatarId = result.Body.SenderAvatar is null
+                                avatarId.Value),
+                            UserAvatarId = result.Body.UserAvatarId is null
                             ? null
-                            : Hasher.GetKey(result.Body.SenderAvatar.Value.ToByteArray()),
-                            Attachments = [.. result.Body.Attachments.Select(x => 
-                            new CommonObjects.Requests.Attachments.Attachment(
-                                Hasher.GetKey(x.Id.ToByteArray()),
-                                _fileTokenService.CreateToken(user.Key2, x.Id),
+                            : Hasher.GetKey(result.Body.UserAvatarId),
+                            Attachments = [.. result.Body.Attachments.Select(x =>
+                            new EditAttachment(
+                                x.IsAdded,
+                                Hasher.GetKey(x.Id),
+                                _fileTokenService.CreateToken(user.Key2, new(x.Id)),
                                 x.OriginalFileName,
                                 x.Category,
                                 x.Metadata,
-                                x.FileSize))]
+                                x.Size))]
                         }, token);
                     }
                 }
             });
-    }
-
-    public async Task DeleteMessage(DeleteMessageRequest request)
-    {
-        Guid userId = ClaimService.GetUserId(Context.User);
-
-        Result result = await _messageService.DeleteMessage(request, userId);
-    }
-
-    public async Task EditMessage(EditMessageRequest request)
-    {
-        Guid userId = ClaimService.GetUserId(Context.User);
-
-        Result result = await _messageService.EditMessage(request, userId);
     }
 }
