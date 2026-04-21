@@ -1,12 +1,14 @@
 ﻿using AdditionalHelpers.Services;
 using CommonObjects.DTO;
 using CommonObjects.Requests.Messages;
+using CommonObjects.Responses;
 using CommonObjects.Results;
 using SecurityLibrary;
 using SecurityLibrary.Tokens;
 using SpoofMessageService.Models;
 using SpoofMessageService.Models.Enums;
 using SpoofMessageService.Services;
+using SpoofMessageService.Services.Events;
 using SpoofMessageService.Services.Repositories;
 using SpoofMessageService.Services.Setters;
 using SpoofMessageService.Services.Validators;
@@ -20,25 +22,30 @@ public class MessageService(
         IMessageValidator messageValidator,
         IChatUserService chatUserService,
         IFileTokenService fileTokenService,
-        IFileMetadatumService fileMetadatumService
+        IAttachmentService attachmentService,
+        IFileMetadatumService fileMetadatumService,
+        IMessageEventService messageEventService
     ) : IMessageService
 {
+    private readonly IAttachmentService _attachmentService = attachmentService;
     private readonly IFileMetadatumService _fileMetadatumService = fileMetadatumService;
     private readonly ILoggerService _loggerService = loggerService;
+    private readonly IMessageEventService _messageEventService = messageEventService;
     private readonly IMessageRepository _messageRepository = messageRepository;
     private readonly IMessageValidator _messageValidator = messageValidator;
     private readonly IChatUserService _chatUserService = chatUserService;
     private readonly IFileTokenService _fileTokenService = fileTokenService;
 
     public async Task<Result> DeleteMessage(
-            DeleteMessageRequest request,
+            Guid messageId, 
+            Guid chatId,
             Guid userId)
     {
         try
         {
-            Task<Message?> messageTask = Task.Run(() => _messageRepository.GetByIdAsync(request.Id));
+            Task<Message?> messageTask = Task.Run(() => _messageRepository.GetByIdAsync(messageId));
             Task<Result<ChatUser>> resultTask = Task.Run(() => _chatUserService.GetAndCheckPermission(
-                    request.ChatId,
+                    chatId,
                     userId,
                     Rules.DeleteMessage
                 ));
@@ -49,7 +56,7 @@ public class MessageService(
 
             Result result = _messageValidator.IsAvailableAndOwner(
                     messageTask.Result,
-                    request.ChatId
+                    chatId
                 );
             if (!result.Success)
                 return result;
@@ -64,7 +71,7 @@ public class MessageService(
         }
     }
 
-    public async Task<Result> EditMessage(
+    public async Task<Result<EditMessageResponse>> EditMessage(
             EditMessageRequest request,
             Guid userId)
     {
@@ -79,35 +86,93 @@ public class MessageService(
             await Task.WhenAll(messageTask, resultTask);
 
             if (!resultTask.Result.Success)
-                return Result.From(resultTask.Result);
+                return Result<EditMessageResponse>.From(resultTask.Result);
             Result result = _messageValidator.IsAvailableAndOwner(
                     messageTask.Result,
-                    request.ChatId
+                    userId
                 );
             if (!result.Success)
-                return result;
+                return Result<EditMessageResponse>.From(result);
 
             messageTask.Result!.Set(
                     request
                 );
+            CancellationTokenSource tokenSource = new();
 
+            ConcurrentBag<Attachment> attachments = [];
+            ConcurrentBag<Attachment> attachments2 = [];
+            await Parallel.ForEachAsync(request.Attachments, async (attachmentDTO, cancellationToken) =>
+            {
+                if (!_fileTokenService.IsValid(attachmentDTO.Token, userId, out Guid fileId))
+                {
+                    tokenSource.Cancel();
+                    return;
+                }
+                if (attachmentDTO.IsAdded)
+                {
+                    Result<FileMetadatum> result = await _fileMetadatumService.Get(fileId);
+                    if (!result.Success)
+                    {
+                        tokenSource.Cancel();
+                        return;
+                    }
+                    attachments.Add(attachmentDTO.Set(fileId));
+                    attachments2.Add(attachmentDTO.Set(fileId, result.Body!));
+                }
+                else
+                {
+                    await _attachmentService.RemoveAttachment(fileId);
+                }
+            });
+
+            foreach (var attachment in attachments)
+                messageTask.Result!.Attachments.Add(attachment);
+            messageTask.Result.LastModified = DateTime.UtcNow;
             await _messageRepository.UpdateAsync(messageTask.Result!);
-
-            return Result.OkResult();
+            messageTask.Result!.Attachments.Clear();
+            foreach (var attachment in attachments2)
+                messageTask.Result!.Attachments.Add(attachment);
+            EditMessageResponse response = new(
+               messageTask.Result!.Id,
+               messageTask.Result.ChatId,
+               resultTask.Result.Body!.User.Login,
+               resultTask.Result.Body.User.Name,
+               null,
+               resultTask.Result.Body.User.AvatarId?.ToByteArray(),
+               resultTask.Result.Body.User.OriginalFileName!,
+               string.IsNullOrEmpty(request.Text) ? null : messageTask.Result.Text,
+               messageTask.Result.LastModified,
+               []);
+            Attachment attachment1;
+            List<Attachment> attachments42 = [.. attachments2];
+            for(int i = 0; i < attachments42.Count; i++)
+            {
+                attachment1 = attachments42[i];
+                response.Attachments.Add(new(
+                       request.Attachments[i].IsAdded,
+                       attachment1.Id.ToByteArray(),
+                       [],
+                       attachment1.OriginalFileName,
+                       attachment1.Category,
+                       attachment1.AdditionalMetadata,
+                       attachment1.Size
+                    ));
+            }
+            return Result<EditMessageResponse>.OkResult(response);
         }
         catch (Exception ex)
         {
             _loggerService.Error("DataBase error", ex);
-            return Result.ErrorResult("Internal server error");
+            return Result<EditMessageResponse>.ErrorResult("Internal server error");
         }
     }
 
-    public async Task<Result<IntermediateMessage>> SendMessage(
+    public async Task<Result<MessageDTO>> SendMessage(
             CreateMessageRequest request,
             Guid userId)
     {
-        if(string.IsNullOrWhiteSpace(request.Text) && request.Attachments is null || request.Attachments.Count == 0)
-            return Result<IntermediateMessage>.BadRequest("At least one field is required: Text or Attachments");
+        if(string.IsNullOrWhiteSpace(request.Text) && (request.Attachments is null || request.Attachments.Count == 0))
+            return Result<MessageDTO>.BadRequest("At least one field is required: Text or Attachments");
 
         try
         {
@@ -117,14 +182,14 @@ public class MessageService(
                     Rules.SendTexts
                 );
             if (!chatUserResult.Success)
-                return Result<IntermediateMessage>.From(chatUserResult);
+                return Result<MessageDTO>.From(chatUserResult);
 
             Message message = request.Set(
                     userId
                 );
             CancellationTokenSource tokenSource = new();
-            _loggerService.Fatal(request.Attachments.Count.ToString());
             ConcurrentBag<Attachment> attachments = [];
+            ConcurrentBag<Attachment> attachments2 = [];
             await Parallel.ForEachAsync(request.Attachments, async (attachmentDTO, cancellationToken) =>
             {
                 if (!_fileTokenService.IsValid(attachmentDTO.Token, userId, out Guid fileId))
@@ -138,35 +203,46 @@ public class MessageService(
                     tokenSource.Cancel();
                     return;
                 }
-                attachments.Add(attachmentDTO.Set(fileId, result.Body!));
+                attachments.Add(attachmentDTO.Set(fileId));
+                attachments2.Add(attachmentDTO.Set(fileId, result.Body!));
             });
             foreach (var attachment in attachments)
                 message.Attachments.Add(attachment);
             await _messageRepository.AddAsync(message);
-            await _messageRepository.UploadAttachments(message);
+            message.Attachments.Clear();
+            foreach (var attachment in attachments2)
+                message.Attachments.Add(attachment);
+            
             message.User = chatUserResult.Body!.User;
-            return Result<IntermediateMessage>.OkResult(new(
-                message.Id,
+
+            MessageDTO messageDTO = new(
+                message!.Id,
                 message.ChatId,
                 chatUserResult.Body.User.Login,
                 chatUserResult.Body.User.Name,
-                chatUserResult.Body.User.AvatarId,
+                null,
+                chatUserResult.Body.User.AvatarId is null
+                            ? null
+                            : Hasher.GetKey(chatUserResult.Body.User.AvatarId.Value.ToByteArray()),
                 chatUserResult.Body.User.OriginalFileName,
                 message.Text,
                 message.SentAt,
-                [..
-                message.Attachments.Select(x => new MessageAttachment(
-                    x.OriginalFileName,
-                    x.FileMetadata.Category,
-                    x.Size,
-                    x.FileMetadata.Metadata,
-                    x.FileMetadataId))
-                ]));
+                message.Attachments.Count == 0
+                ? null : [.. message.Attachments.Select(x =>
+                                    new CommonObjects.Requests.Attachments.Attachment(
+                                        Hasher.GetKey(x.Id.ToByteArray()),
+                                        [],
+                                        x.OriginalFileName,
+                                        x.Category,
+                                        x.AdditionalMetadata,
+                                        x.Size))]);
+            _messageEventService.ReciveMessage(messageDTO, chatUserResult.Body.Chat);
+            return Result<MessageDTO>.OkResult(messageDTO);
         }
         catch (Exception ex)
         {
             _loggerService.Error("DataBase error", ex);
-            return Result<IntermediateMessage>.ErrorResult("Internal server error");
+            return Result<MessageDTO>.ErrorResult("Internal server error");
         }
     }
 
