@@ -2,7 +2,7 @@
 
 namespace SpoofMessageService.Services.Events;
 
-public interface IUserEventsService
+public interface IUserEventService
 {
     public event UserUpdatedHandler? UserUpdated;
 

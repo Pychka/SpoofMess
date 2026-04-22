@@ -9,7 +9,7 @@ public static class MessageSetter
     public static void Set(this Message message, EditMessageRequest request)
     {
         message.Text = request.Text ?? message.Text;
-        //message.Attachments = request.Attachments?.Select(x => x.Set(operationsStatus)).ToList() ?? message.Attachments;
+        message.Attachments.Clear();
     }
     public static Message Set(this CreateMessageRequest request, Guid userId) =>
         new() { 

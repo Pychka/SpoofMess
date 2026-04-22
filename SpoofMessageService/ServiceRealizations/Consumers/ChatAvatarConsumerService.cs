@@ -8,7 +8,7 @@ using SpoofMessageService.Services;
 
 namespace SpoofMessageService.ServiceRealizations.Consumers;
 
-public class UserAvatarConsumerService(
+public class ChatAvatarConsumerService(
     RabbitMQSettings settings,
     IInjectionService injectionService,
     ISerializer serializer,
@@ -21,7 +21,7 @@ public class UserAvatarConsumerService(
 {
     protected readonly IInjectionService _injectionService = injectionService;
 
-    protected override string BaseQueueName => "message.userAvatar";
+    protected override string BaseQueueName => "message.chatAvatar";
 
     protected override string Exchange => "settings-service";
 
@@ -34,11 +34,11 @@ public class UserAvatarConsumerService(
 
     private async Task SuccessCreated()
     {
-        await ConsumeFromQueueAsync<CreateUserAvatar>("success.created", "userAvatar.success.created", async (createUserAvatar) =>
+        await ConsumeFromQueueAsync<CreateChatAvatar>("success.created", "chatAvatar.success.created", async (createChatAvatar) =>
         {
-            await _injectionService.Invoke<IUserAvatarService, Task<Result>>(async (chatService) =>
+            await _injectionService.Invoke<IChatAvatarService, Task<Result>>(async (chatService) =>
             {
-                return await chatService.Create(createUserAvatar);
+                return await chatService.Create(createChatAvatar);
             });
         });
     }

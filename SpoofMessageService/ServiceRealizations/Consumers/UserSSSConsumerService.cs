@@ -7,7 +7,7 @@ using SpoofMessageService.Services;
 
 namespace SpoofMessageService.ServiceRealizations.Consumers;
 
-public class UserSESConsumerService(
+public class UserSSSConsumerService(
     RabbitMQSettings settings,
     ISerializer serializer,
     ILoggerService loggerService,
@@ -19,24 +19,24 @@ public class UserSESConsumerService(
         )
 {
     protected readonly IInjectionService _injectionService = injectionService;
-    protected override string Exchange => "entrance-service";
+    protected override string Exchange => "settings-service";
     protected override string BaseQueueName => "message.user";
 
     public override async Task Initialize()
     {
-        await ConfirmCreated();
+        await ConfirmUpdated();
     }
 
-    public async Task ConfirmCreated()
+    public async Task ConfirmUpdated()
     {
-        await ConsumeFromQueueAsync<CreateUser>(
-            "success.created", 
-            "user.success.created",
-            async (createUser) =>
+        await ConsumeFromQueueAsync<UpdateUser>(
+            "success.updated",
+            "user.success.updated",
+            async (updateUser) =>
             {
                 await _injectionService.Invoke<IUserService, Task>(
-                    async (userEntryService) => await userEntryService.Create(createUser));
-                _loggerService.Info($"{createUser.UserId} was created");
+                    async (userEntryService) => await userEntryService.Update(updateUser));
+                _loggerService.Info($"{updateUser.UserId} was updated");
             });
     }
 }

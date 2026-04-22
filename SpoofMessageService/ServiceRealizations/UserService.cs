@@ -13,10 +13,10 @@ public class UserService(
     IUserRepository userRepository,
     ILoggerService loggerService,
     IUserValidator userValidator,
-    IUserEventsService userEventsService
+    IUserEventService userEventsService
     ) : IUserService
 {
-    private readonly IUserEventsService _userEventsService = userEventsService;
+    private readonly IUserEventService _userEventsService = userEventsService;
     private readonly IUserValidator _userValidator = userValidator;
     private readonly IUserRepository _userRepository = userRepository;
     private readonly ILoggerService _loggerService = loggerService;
@@ -98,6 +98,23 @@ public class UserService(
         {
             _loggerService.Error("Database error", ex);
             return Result.ErrorResult("Database error");
+        }
+    }
+
+    public async Task<Result<User>> Get(Guid id)
+    {
+        try
+        {
+            User? user = await _userRepository.GetByIdAsync(id);
+            Result result = _userValidator.IsAvailable(user);
+            return result.Success
+                ? Result<User>.OkResult(user!)
+                : Result<User>.From(result);
+        }
+        catch (Exception ex)
+        {
+            _loggerService.Error("Database error", ex);
+            return Result<User>.ErrorResult("Database error");
         }
     }
 }

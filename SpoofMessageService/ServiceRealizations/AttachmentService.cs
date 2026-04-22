@@ -2,13 +2,16 @@
 using CommonObjects.Requests.Attachments;
 using CommonObjects.Results;
 using SpoofMessageService.Services;
+using SpoofMessageService.Services.Repositories;
 
 namespace SpoofMessageService.ServiceRealizations;
 
 public class AttachmentService(
-    ILoggerService loggerService
+    ILoggerService loggerService,
+    IAttachmentRepository attachmentRepository
     ) : IAttachmentService
 {
+    private readonly IAttachmentRepository _attachmentRepository = attachmentRepository;
     private readonly ILoggerService _loggerService = loggerService;
     public async Task<Result> AddAttachment(AddAttachmentRequest request)
     {
@@ -23,10 +26,11 @@ public class AttachmentService(
         }
     }
 
-    public async Task<Result> RemoveAttachment(RemoveAttachmentRequest request)
+    public async Task<Result> RemoveAttachment(Guid id)
     {
         try
         {
+            await _attachmentRepository.SoftExecuteDelete(id);
             return Result.OkResult();
         }
         catch (Exception ex)

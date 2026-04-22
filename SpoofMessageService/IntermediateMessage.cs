@@ -7,7 +7,7 @@ public readonly record struct IntermediateMessage(
         string SenderName,
         Guid? SenderAvatar,
         string OriginalFileName,
-        string Text,
+        string? Text,
         DateTime SendAt,
         MessageAttachment[] Attachments
     );

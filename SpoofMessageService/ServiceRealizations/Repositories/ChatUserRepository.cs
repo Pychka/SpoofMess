@@ -26,6 +26,7 @@ public class ChatUserRepository(
         await using SpoofMessageServiceContext context = await _factory.CreateDbContextAsync();
         return await context.ChatUsers
             .Include(x => x.User)
+            .Include(x => x.Chat)
             .FirstOrDefaultAsync(x => 
             x.Key1 == chatId 
             && x.Key2 == userId

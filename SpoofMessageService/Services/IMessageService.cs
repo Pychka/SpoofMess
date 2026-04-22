@@ -1,5 +1,6 @@
 ﻿using CommonObjects.DTO;
 using CommonObjects.Requests.Messages;
+using CommonObjects.Responses;
 using CommonObjects.Results;
 
 namespace SpoofMessageService.Services;
@@ -7,18 +8,19 @@ namespace SpoofMessageService.Services;
 public interface IMessageService
 {
     [Obsolete("Need check permissions for message content")]
-    public Task<Result<IntermediateMessage>> SendMessage(
+    public Task<Result<MessageDTO>> SendMessage(
         CreateMessageRequest request, 
         Guid userId
     );
     public Task<Result> DeleteMessage(
-        DeleteMessageRequest request,
+        Guid messageId, 
+        Guid chatId,
         Guid userId
     );
 
 
     [Obsolete("Need check permissions for message content")]
-    public Task<Result> EditMessage(
+    public Task<Result<EditMessageResponse>> EditMessage(
         EditMessageRequest request, 
         Guid userId
     );

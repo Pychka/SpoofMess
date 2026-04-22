@@ -1,4 +1,5 @@
 ﻿using CommonObjects.DTO;
+using CommonObjects.Responses;
 using SpoofMessageService.Models;
 using SpoofMessageService.Models.Enums;
 
@@ -30,9 +31,27 @@ public static class AttachmentSetter
         new()
         {
             FileMetadataId = fileId,
+            FileMetadata = metadatum,
             OriginalFileName = attachment.OriginalFileName,
             Size = metadatum.Size,
-            Category = metadatum.Category
+            Category = metadatum.Category,
+            AdditionalMetadata = metadatum.Metadata,
         };
+    public static Attachment Set(this EditAttachment attachment, Guid fileId) =>
+    new()
+    {
+        FileMetadataId = fileId,
+        OriginalFileName = attachment.OriginalFileName
+    };
 
+    public static Attachment Set(this EditAttachment attachment, Guid fileId, FileMetadatum metadatum) =>
+        new()
+        {
+            FileMetadataId = fileId,
+            FileMetadata = metadatum,
+            OriginalFileName = attachment.OriginalFileName,
+            Size = metadatum.Size,
+            Category = metadatum.Category,
+            AdditionalMetadata = metadatum.Metadata,
+        };
 }

@@ -76,9 +76,16 @@ public class MessageRepository(
     public async Task UploadAttachments(Message message)
     {
         await using SpoofMessageServiceContext context = await _factory.CreateDbContextAsync();
-        message.Attachments = await context.Attachments
+        List<Guid> attachmentIds = [.. message.Attachments.Select(y => y.Id)];
+        List<Attachment> loadedAttachments = await context.Attachments
             .Include(x => x.FileMetadata)
-            .Where(x => x.MessageId == message.Id)
+            .Where(x => x.MessageId == message.Id && attachmentIds.Contains(x.FileMetadataId))
             .ToListAsync();
+
+        message.Attachments.Clear();
+        foreach (Attachment attr in loadedAttachments)
+        {
+            message.Attachments.Add(attr);
+        }
     }
 }

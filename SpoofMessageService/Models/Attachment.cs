@@ -19,4 +19,6 @@ public partial class Attachment : IdentifiedSoftDeletableChangeableEntity<Guid>
     public long Size { get; set; }
     [NotMapped]
     public string Category { get; set;  } = string.Empty;
+    [NotMapped]
+    public string? AdditionalMetadata { get; set; }
 }

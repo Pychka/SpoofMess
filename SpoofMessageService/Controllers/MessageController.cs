@@ -7,7 +7,6 @@ using SecurityLibrary;
 using SpoofMessageService.Services;
 
 namespace SpoofMessageService.Controllers;
-
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
@@ -20,7 +19,7 @@ public class MessageController(IMessageService messageService) : ControllerBase
     {
         Guid userId = ClaimService.GetUserId(User);
 
-        Result<IntermediateMessage> result = await _messageService.SendMessage(request, userId);
+        Result<MessageDTO> result = await _messageService.SendMessage(request, userId);
         return StatusCode(
             result.StatusCode,
             result.Success 
@@ -81,6 +80,24 @@ public class MessageController(IMessageService messageService) : ControllerBase
             result.StatusCode,
             result.Success
                 ? result.Body
+                : result.Error
+            );
+    }
+
+    [HttpDelete("delete")]
+    public async Task<IActionResult> DeleteMessage(Guid messageId, Guid chatId)
+    {
+        Guid userId = ClaimService.GetUserId(User);
+
+        Result result = await _messageService.DeleteMessage(
+                messageId, 
+                chatId,
+                userId
+            );
+        return StatusCode(
+            result.StatusCode,
+            result.Success
+                ? result.Message
                 : result.Error
             );
     }

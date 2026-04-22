@@ -3,7 +3,7 @@ using CommunicationLibrary.Communication;
 
 namespace SpoofMessageService.Services;
 
-public interface IUserAvatarService
+public interface IChatAvatarService
 {
-    public Task<Result> Create(CreateUserAvatar createUserAvatar);
+    public Task<Result> Create(CreateChatAvatar createChatAvatar);
 }
