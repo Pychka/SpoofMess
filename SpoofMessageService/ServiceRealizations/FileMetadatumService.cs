@@ -1,6 +1,8 @@
 ﻿using AdditionalHelpers.Services;
+using CommonObjects.DTO;
 using CommonObjects.Results;
 using CommunicationLibrary.Communication;
+using SecurityLibrary.Tokens;
 using SpoofMessageService.Models;
 using SpoofMessageService.Services;
 using SpoofMessageService.Services.Repositories;
@@ -11,11 +13,35 @@ namespace SpoofMessageService.ServiceRealizations;
 public class FileMetadatumService(
     IFileMetadatumRepository fileMetadatumRepository,
     ILoggerService loggerService, 
+    IUserService userService,
+    IFileTokenService fileTokenService,
     IFileMetadatumValidator fileMetadatumValidator) : IFileMetadatumService
 {
+    private readonly IUserService _userService = userService;
     private readonly IFileMetadatumRepository _fileMetadatumRepository = fileMetadatumRepository;
     private readonly IFileMetadatumValidator _fileMetadatumValidator = fileMetadatumValidator;
+    private readonly IFileTokenService _fileTokenService = fileTokenService;
     private readonly ILoggerService _loggerService = loggerService;
+    public async Task<Result<FileMetadata>> Get(Guid fileId, Guid userId)
+    {
+        try
+        {
+            Result<User> user = await _userService.Get(userId);
+            if (!user.Success)
+                return Result<FileMetadata>.From(user);
+            FileMetadatum? fileMetadatum = await _fileMetadatumRepository.GetByIdAsync(fileId);
+            Result result = _fileMetadatumValidator.IsAvailable(fileMetadatum);
+            if (!result.Success)
+                return Result<FileMetadata>.From(result);
+            return Result<FileMetadata>.OkResult(new(_fileTokenService.CreateToken(userId, fileMetadatum!.Id), fileMetadatum!.Id.ToByteArray(), string.Empty, fileMetadatum.Size));
+        }
+        catch (Exception ex)
+        {
+            _loggerService.Error("DataBase error", ex);
+            return Result<FileMetadata>.InternalServerError();
+        }
+    }
+
     public async Task<Result<FileMetadatum>> Get(Guid fileId)
     {
         try
