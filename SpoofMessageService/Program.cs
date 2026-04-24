@@ -61,6 +61,7 @@ builder.Services.AddTransient<IFileTokenService, FileTokenService>();
 
 builder.Services.AddSingleton<IUserEventService, UserEventService>();
 builder.Services.AddSingleton<IMessageEventService, MessageEventService>();
+builder.Services.AddSingleton<IChatEventService, ChatEventService>();
 
 builder.Services.AddSingleton(
     builder.Configuration.GetSection("TokenHeader")

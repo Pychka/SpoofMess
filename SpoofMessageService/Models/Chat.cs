@@ -12,6 +12,8 @@ public partial class Chat : IdentifiedSoftDeletableChangeableEntity<Guid>
 
     public string? Name { get; set; }
 
+    public bool IsPublic { get; set; }
+
     public virtual FileMetadatum? Avatar { get; set; }
 
     public virtual ICollection<ChatUser> ChatUsers { get; set; } = [];

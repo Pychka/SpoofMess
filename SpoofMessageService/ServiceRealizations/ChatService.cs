@@ -53,7 +53,7 @@ public class ChatService(
     {
         try
         {
-            Result<ChatUser> result = await _chatUserService.GetAndCheckPermission(request.Id, userId, Models.Enums.Rules.ChangeSettings);
+            Result<ChatUser> result = await _chatUserService.GetMember(request.Id, userId);
             if (!result.Success)
                 return Result.From(result);
             result.Body!.Chat.Name = request.ChatName ?? result.Body!.Chat.Name;

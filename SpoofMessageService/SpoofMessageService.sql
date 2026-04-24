@@ -25,6 +25,7 @@ create table "Chat"
 	"OriginalFileName" text,
 	"UniqueName" varchar(100) unique not null,
 	"Name" varchar(100),
+	"IsPublic" boolean not null default false,
 	"LastModified" timestamptz not null default CURRENT_TIMESTAMP,
 	"IsDeleted" boolean not null default false
 );
