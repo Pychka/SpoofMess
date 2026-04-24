@@ -1,13 +1,11 @@
 ﻿using AdditionalHelpers.Services;
 using CommonObjects.DTO;
-using CommonObjects.Responses;
+using CommonObjects.Requests.Changes;
 using CommonObjects.Results;
 using Microsoft.AspNetCore.SignalR;
-using SecurityLibrary;
 using SpoofMessageService.Models;
 using SpoofMessageService.Services;
 using SpoofMessageService.Services.Events;
-using System.Collections.Concurrent;
 
 namespace SpoofMessageService.ServiceRealizations;
 
@@ -15,6 +13,7 @@ public class NotificationService : BackgroundService
 {
     private readonly IHubContext<ChatHub> _hubContext;
     private readonly IUserEventService _userService;
+    private readonly IChatEventService _chatEventService;
     private readonly IMessageEventService _messageEventService;
     private readonly ILoggerService loggerService;
     private readonly IChatUserService _chatUserService;
@@ -26,16 +25,16 @@ public class NotificationService : BackgroundService
         loggerService = scope.ServiceProvider.GetRequiredService<ILoggerService>();
         _chatUserService = scope.ServiceProvider.GetRequiredService<IChatUserService>();
         _messageEventService = scope.ServiceProvider.GetRequiredService<IMessageEventService>();
+        _chatEventService = scope.ServiceProvider.GetRequiredService<IChatEventService>();
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _userService.UserUpdated += UserUpdated;
         _messageEventService.OnMessageRecived += OnMessageRecived;
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            await Task.Delay(1000, stoppingToken);
-        }
+        _chatEventService.ChatUpdated += ChatUpdated;
+
+        await Task.Delay(-1, stoppingToken);
     }
 
     private async void OnMessageRecived(MessageDTO message, Chat chat)
@@ -51,11 +50,16 @@ public class NotificationService : BackgroundService
                 await _hubContext.Clients.Group($"chat-{chat.Chat.UniqueName}").SendAsync("user-updated", user);
     }
 
-
+    private async void ChatUpdated(ChangeChatSettingsRequest request, Chat chat)
+    {
+        await _hubContext.Clients.Group($"chat-{chat.UniqueName}").SendAsync("chat-updated", request);
+    }
 
     public override void Dispose()
     {
         _userService.UserUpdated -= UserUpdated;
+        _messageEventService.OnMessageRecived -= OnMessageRecived;
+        _chatEventService.ChatUpdated -= ChatUpdated;
         base.Dispose();
         GC.SuppressFinalize(this);
     }
