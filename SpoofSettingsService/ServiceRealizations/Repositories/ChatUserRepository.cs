@@ -38,12 +38,14 @@ public class ChatUserRepository(
     {
         await using SpoofSettingsServiceContext context = await _factory.CreateDbContextAsync();
         return await context.Database.SqlQuery<ChatUserDTO>(
-            $@"SELECT c.""Id"", c.""ChatTypeId"", c.""UniqueName"", c.""Name"",
+            $@"SELECT c.""Id"", c.""ChatTypeId"", c.""UniqueName"", c.""Name"", c.""CreatedAt"", ca.""FileId"", ca.""OriginalFileName"", ca.""Id"" AS ""AvatarId"", fm.""Metadata"",
                jsonb_agg(perm::permission_result) AS ""RulesJson""
                FROM ""ChatUser"" cu JOIN ""Chat"" c ON c.""Id"" = cu.""ChatId"" 
                LEFT JOIN LATERAL get_user_permission({userId}, cu.""ChatId"", null) perm ON true
+               LEFT JOIN ""ChatAvatar"" ca ON c.""Id"" = ca.""ChatId""
+               LEFT JOIN ""FileMetadata"" fm ON fm.""Id"" = ca.""FileId""
                WHERE cu.""UserId"" = {userId} AND cu.""JoinedAt"" > {after}
-               GROUP BY c.""Id"", c.""ChatTypeId"", c.""UniqueName"", c.""Name"""
+               GROUP BY c.""Id"", c.""ChatTypeId"", c.""UniqueName"", c.""Name"", ca.""FileId"", ca.""OriginalFileName"", ca.""Id"", fm.""Metadata"""
            ).ToListAsync();
     }
 }
