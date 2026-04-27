@@ -4,6 +4,8 @@ using CommonObjects.Requests.ChatUsers;
 using CommonObjects.Requests.Members;
 using CommonObjects.Results;
 using RuleRoleHelper;
+using SecurityLibrary;
+using SecurityLibrary.Tokens;
 using SpoofSettingsService.Models;
 using SpoofSettingsService.Services;
 using SpoofSettingsService.Services.MessageBrokers;
@@ -19,9 +21,11 @@ public class ChatUserService(
     IChatService chatService,
     IUserService userService,
     IChatUserRepository chatUserRepository,
-    IChatUserPublisherService chatUserPublisherService
+    IChatUserPublisherService chatUserPublisherService,
+    IFileTokenService fileTokenService
     ) : IChatUserService
 {
+    private readonly IFileTokenService _fileTokenService = fileTokenService;
     private readonly IUserService _userService = userService;
     private readonly IChatUserValidator _chatUserValidator = chatUserValidator;
     private readonly IChatUserRepository _chatUserRepository = chatUserRepository;
@@ -149,7 +153,13 @@ public class ChatUserService(
             if(chats is null or [])
                 return Result<List<ChatUserDTO>>.BadRequest("Invalid token");
 
-
+            foreach(ChatUserDTO chatUser in chats)
+            {
+                if (chatUser.FileId is null)
+                    continue;
+                chatUser.ChatAvatarToken = _fileTokenService.CreateToken(userId, chatUser.FileId.Value);
+                chatUser.ChatAvatarId = Hasher.GetKey(chatUser.FileId.Value.ToByteArray());
+            }
             return Result<List<ChatUserDTO>>.OkResult(chats);
         }
         catch (Exception ex)
