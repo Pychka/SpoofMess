@@ -4,5 +4,5 @@ namespace SpoofSettingsService.Services.MessageBrokers;
 
 public interface IUserAvatarPublisherService
 {
-    public Task Publish(CreateUserAvatar chat);
+    public Task Publish(CreateUserAvatar createUserAvatar);
 }

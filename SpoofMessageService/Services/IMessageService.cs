@@ -7,6 +7,8 @@ namespace SpoofMessageService.Services;
 
 public interface IMessageService
 {
+    public Task<Result<int>> Stat();
+
     [Obsolete("Need check permissions for message content")]
     public Task<Result<MessageDTO>> SendMessage(
         CreateMessageRequest request, 

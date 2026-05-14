@@ -1,6 +1,6 @@
 ﻿using AdditionalHelpers.Services;
+using CommonObjects.DTO;
 using CommonObjects.Results;
-using SpoofMessageService.Models;
 using SpoofMessageService.Services;
 using SpoofMessageService.Services.Repositories;
 
@@ -10,7 +10,7 @@ public class SearchService(ISearchRepository searchRepository, ILoggerService lo
 {
     private readonly ISearchRepository _searchRepository = searchRepository;
     private readonly ILoggerService _loggerService = loggerService;
-    public async Task<Result<List<SearchableEntity>>> Search(string query, Guid userId)
+    public async Task<Result<List<SearchableEntity>>> SimpleSearchChats(string query, Guid userId)
     {
         try
         {
@@ -23,6 +23,22 @@ public class SearchService(ISearchRepository searchRepository, ILoggerService lo
         {
             _loggerService.Error(ex.Message, ex);
             return Result<List<SearchableEntity>>.InternalServerError();
+        }
+    }
+
+    public async Task<Result<List<SearchableMessage>>> SimpleSearchMessages(string query, Guid userId)
+    {
+        try
+        {
+            List<SearchableMessage> searchableEntities = await _searchRepository.GetMessages(query, userId);
+            if (searchableEntities.Count > 0)
+                return Result<List<SearchableMessage>>.OkResult(searchableEntities);
+            return Result<List<SearchableMessage>>.NotFoundResult("No results");
+        }
+        catch (Exception ex)
+        {
+            _loggerService.Error(ex.Message, ex);
+            return Result<List<SearchableMessage>>.InternalServerError();
         }
     }
 }

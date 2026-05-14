@@ -4,6 +4,7 @@ using CommonObjects.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SecurityLibrary;
+using SpoofMessageService.ServiceRealizations;
 using SpoofMessageService.Services;
 
 namespace SpoofMessageService.Controllers;
@@ -98,6 +99,19 @@ public class MessageController(IMessageService messageService) : ControllerBase
             result.StatusCode,
             result.Success
                 ? result.Message
+                : result.Error
+            );
+    }
+
+    [AllowAnonymous]
+    [HttpGet("stat")]
+    public async Task<IActionResult> Stat()
+    {
+        Result<int> result = await _messageService.Stat();
+        return StatusCode(
+            result.StatusCode,
+            result.Success
+                ? result.Body
                 : result.Error
             );
     }

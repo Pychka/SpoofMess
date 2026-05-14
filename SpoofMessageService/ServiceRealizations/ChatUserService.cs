@@ -1,9 +1,11 @@
 ﻿using AdditionalHelpers.Services;
 using CommonObjects.Results;
 using CommunicationLibrary.Communication;
+using SecurityLibrary;
 using SpoofMessageService.Models;
 using SpoofMessageService.Models.Enums;
 using SpoofMessageService.Services;
+using SpoofMessageService.Services.Events;
 using SpoofMessageService.Services.Repositories;
 using SpoofMessageService.Services.Validators;
 
@@ -13,12 +15,14 @@ public class ChatUserService(
     IChatUserRepository chatUserRepository,
     IChatUserValidator chatUserValidator,
     ILoggerService loggerService,
-    IRuleParserService ruleParserService) : IChatUserService
+    IRuleParserService ruleParserService,
+    IChatEventService chatEventService) : IChatUserService
 {
     private readonly IChatUserRepository _chatUserRepository = chatUserRepository;
     private readonly IChatUserValidator _chatUserValidator = chatUserValidator;
     private readonly ILoggerService _loggerService = loggerService;
     private readonly IRuleParserService _ruleParserService = ruleParserService;
+    private readonly IChatEventService _chatEventService = chatEventService;
 
     public async Task<Result> Add(CreateChatUser createChatUser)
     {
@@ -32,6 +36,8 @@ public class ChatUserService(
                 Rules = _ruleParserService.ParseRules(createChatUser.Rules)
             };
             await _chatUserRepository.AddAsync(chatUser);
+
+            _chatEventService.NotifyCreate(chatUser);
 
             return Result.OkResult();
         }
@@ -74,7 +80,7 @@ public class ChatUserService(
     {
         try
         {
-            ChatUser? chatUser = await _chatUserRepository.GetByIdAsync(updateChatUser.ChatId, updateChatUser.UserId);
+            ChatUser? chatUser = await _chatUserRepository.GetById(updateChatUser.ChatId, updateChatUser.UserId);
             Result result = _chatUserValidator.IsAvailable(chatUser);
             if (!result.Success)
                 return result;
@@ -95,7 +101,7 @@ public class ChatUserService(
     {
         try
         {
-            ChatUser? chatUser = await _chatUserRepository.GetByIdAsync(chatId, userId);
+            ChatUser? chatUser = await _chatUserRepository.GetById(chatId, userId);
             Result result = _chatUserValidator.IsAvailable(chatUser);
             if (!result.Success)
                 return Result<ChatUser>.From(result);

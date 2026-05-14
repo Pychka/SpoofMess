@@ -32,4 +32,5 @@ public interface IChatService
     public Task<Result<Chat>> Get(
         Guid chatId
         );
+    public Task<Result<ChatDTO>> GetChat(Guid userId, Guid chatId);
 }

@@ -2,6 +2,7 @@
 using CommonObjects.Results;
 using CommunicationLibrary.Communication;
 using SpoofMessageService.Models;
+using SpoofMessageService.ServiceRealizations.Repositories;
 using SpoofMessageService.Services;
 using SpoofMessageService.Services.Events;
 using SpoofMessageService.Services.Repositories;
@@ -21,6 +22,19 @@ public class UserService(
     private readonly IUserRepository _userRepository = userRepository;
     private readonly ILoggerService _loggerService = loggerService;
 
+    public async Task<Result<int>> Stat()
+    {
+        try
+        {
+            int count = await _userRepository.GetCountActiveUsers();
+            return Result<int>.OkResult(count);
+        }
+        catch (Exception ex)
+        {
+            _loggerService.Error("DataBase error", ex);
+            return Result<int>.ErrorResult("Internal server error");
+        }
+    }
     public async Task<Result> Create(CreateUser createUser)
     {
         try
@@ -73,6 +87,7 @@ public class UserService(
             _userEventsService.NotifyUpdate(new(
                 updateUser.Name,
                 user.Login,
+                null,
                 null,
                 null,
                 DateTime.UtcNow),

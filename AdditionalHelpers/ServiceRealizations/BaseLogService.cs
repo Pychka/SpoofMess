@@ -10,7 +10,7 @@ public abstract class BaseLogService(LogLevel minLogLevel) : ILoggerService
     public bool IsEnabled(LogLevel level) =>
         (short)_minLogLevel <= (short)level;
 
-    public bool CheckFile(LogLevel level) =>
+    public static bool CheckFile(LogLevel level) =>
         (short)level <= (short)LogLevel.Warning;
 
     protected static LogEntry Format(

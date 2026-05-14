@@ -3,5 +3,7 @@
 public record UserDTO(
         string Name,
         string Login,
-        byte[]? AvatarToken
+        byte[]? AvatarId,
+        byte[]? AvatarToken,
+        string? AvatarOriginalFileName
     );

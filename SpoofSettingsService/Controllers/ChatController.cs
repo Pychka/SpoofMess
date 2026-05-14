@@ -31,6 +31,21 @@ public class ChatController(IChatService chatService) : ControllerBase
     }
 
 
+    [HttpGet("Get")]
+    public async Task<IActionResult> GetChat(Guid chatId)
+    {
+        Guid userId = ClaimService.GetUserId(User);
+
+        Result<ChatDTO> result = await _chatService.GetChat(userId, chatId);
+        return StatusCode(
+            result.StatusCode,
+            result.Success
+                ? result.Body
+                : result.Error
+                );
+    }
+
+
     [HttpPost("CreateChat")]
     public async Task<IActionResult> CreateChat(CreateChatRequest request)
     {

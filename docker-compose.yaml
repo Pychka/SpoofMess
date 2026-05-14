@@ -1,6 +1,7 @@
 services:
     rabbitmq:
         image: rabbitmq:3-management
+        restart: always
         ports:
             - "5672:5672"
             - "15672:15672"
@@ -193,7 +194,7 @@ services:
         build:
             context: .
             dockerfile: SpoofFileService/Dockerfile
-        container_name: spoof-message-service
+        container_name: spoof-file-service
         depends_on:
             - redis
             - sfssql

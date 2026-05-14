@@ -20,8 +20,8 @@ public class ChatUserRepository(
         await using SpoofMessageServiceContext context = await _factory.CreateDbContextAsync();
         await context.ChatUsers.Where(x => x.Key1 == chatId && x.Key2 == userId).ExecuteDeleteAsync();
     }
-
-    public new async Task<ChatUser?> GetByIdAsync(Guid chatId, Guid userId)
+    
+    public async Task<ChatUser?> GetById(Guid chatId, Guid userId)
     {
         await using SpoofMessageServiceContext context = await _factory.CreateDbContextAsync();
         return await context.ChatUsers

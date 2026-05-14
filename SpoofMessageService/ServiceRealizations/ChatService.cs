@@ -6,6 +6,7 @@ using SpoofMessageService.Models;
 using SpoofMessageService.Services;
 using SpoofMessageService.Services.Events;
 using SpoofMessageService.Services.Repositories;
+using SpoofMessageService.Services.Validators;
 
 namespace SpoofMessageService.ServiceRealizations;
 
@@ -13,9 +14,11 @@ public class ChatService(
     IChatRepository chatRepository,
     ILoggerService loggerService,
     IChatUserService chatUserService,
-    IChatEventService chatEventService
+    IChatEventService chatEventService,
+    IChatValidator chatValidator
     ) : IChatService
 {
+    private readonly IChatValidator _chatValidator = chatValidator;
     private readonly IChatEventService _chatEventService = chatEventService;
     private readonly IChatUserService _chatUserService = chatUserService;
     private readonly IChatRepository _chatRepository = chatRepository;
@@ -48,6 +51,20 @@ public class ChatService(
         throw new NotImplementedException();
     }
 
+    public async Task<Result<Chat>> Get(Guid chatId)
+    {
+        try
+        {
+            Chat? chat = await _chatRepository.GetByIdAsync(chatId);
+            Result result = _chatValidator.IsAvailable(chat);
+            return result.Success ? Result<Chat>.OkResult(chat!) : Result<Chat>.From(result);
+        }
+        catch (Exception ex)
+        {
+            _loggerService.Error("Database error", ex);
+            return Result<Chat>.ErrorResult("Database error");
+        }
+    }
 
     public async Task<Result> Update(ChangeChatSettingsRequest request, Guid userId)
     {

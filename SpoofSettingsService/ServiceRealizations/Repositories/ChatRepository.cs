@@ -9,6 +9,9 @@ namespace SpoofSettingsService.ServiceRealizations.Repositories;
 
 public class ChatRepository(ICacheService cache, SpoofSettingsServiceContext context, IProcessQueueTasksService tasksService) : CachedSoftDeletableIdentifiedRepository<Chat, Guid>(cache, context, tasksService), IChatRepository
 {
+    public async Task<Chat?> GetAsync(Guid id) =>
+        await GetAsync(GetKey(id), async () => await context.Chats.Include(x => x.ChatAvatars).Include(x => x.Owner).FirstOrDefaultAsync(x => x.Id == id));
+
     public async Task<Chat?> GetByUniqueName(string name) =>
         await GetAsync(name, async () => await context.Chats.FirstOrDefaultAsync(x => x.UniqueName == name));
 

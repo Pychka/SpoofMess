@@ -20,4 +20,5 @@ public interface IUserService
             Guid userId, 
             bool state
         );
+    public Task<Result<int>> Stat();
 }

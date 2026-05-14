@@ -12,10 +12,14 @@ public class JsonSerializerService : ISerializer
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        ReferenceHandler = ReferenceHandler.IgnoreCycles
+        ReferenceHandler = ReferenceHandler.IgnoreCycles,
+        AllowOutOfOrderMetadataProperties = true
     };
     public string Serialize<T>(T obj) =>
         JsonSerializer.Serialize(obj, Options);
+
+    public async Task Serialize<T>(T obj, Stream stream) =>
+        await JsonSerializer.SerializeAsync(stream, obj, Options);
 
     public T Deserialize<T>(string text)
     {

@@ -1,4 +1,5 @@
 ﻿using CommonObjects.Requests.Avatars;
+using CommonObjects.Responses;
 using CommonObjects.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,6 +25,22 @@ public class UserAvatarController(IUserAvatarService userAvatarService) : Contro
             result.StatusCode,
             result.Success
                 ? result.Message
+                : result.Error
+                );
+    }
+
+
+
+    [HttpPost("Get")]
+    public async Task<IActionResult> Get(byte[] accessToken)
+    {
+        Guid userId = ClaimService.GetUserId(User);
+
+        Result<AvatarResponse> result = await _userAvatarService.GetAvatar(accessToken, userId);
+        return StatusCode(
+            result.StatusCode,
+            result.Success
+                ? result.Body
                 : result.Error
                 );
     }

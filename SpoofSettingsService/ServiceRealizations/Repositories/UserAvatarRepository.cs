@@ -16,6 +16,12 @@ public class UserAvatarRepository(
         tasksService
     ), IUserAvatarRepository
 {
+
+    public override async Task<UserAvatar?> GetByIdAsync(Guid id)
+    {
+        await using SpoofSettingsServiceContext context = await _factory.CreateDbContextAsync();
+        return await context.UserAvatars.Include(x => x.File).FirstOrDefaultAsync(x => x.Id == id);
+    }
     public async Task<UserAvatar?> GetActualUserAvatarById(Guid userId)
     {
         await using SpoofSettingsServiceContext context = await _factory.CreateDbContextAsync();

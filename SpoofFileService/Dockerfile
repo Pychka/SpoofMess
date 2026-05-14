@@ -13,6 +13,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["SpoofFileService/SpoofFileService.csproj", "SpoofFileService/"]
+COPY ["SpoofFileParser/SpoofFileParser.csproj", "SpoofFileParser/"]
 RUN dotnet restore "./SpoofFileService/SpoofFileService.csproj"
 COPY . .
 WORKDIR "/src/SpoofFileService"
@@ -27,4 +28,5 @@ RUN dotnet publish "./SpoofFileService.csproj" -c $BUILD_CONFIGURATION -o /app/p
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+COPY SpoofFileParser/ SpoofFileParser/
 ENTRYPOINT ["dotnet", "SpoofFileService.dll"]

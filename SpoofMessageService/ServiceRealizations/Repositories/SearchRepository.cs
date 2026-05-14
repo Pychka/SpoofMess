@@ -1,4 +1,5 @@
-﻿using DataSaveHelpers.Services;
+﻿using CommonObjects.DTO;
+using DataSaveHelpers.Services;
 using Microsoft.EntityFrameworkCore;
 using SpoofMessageService.Models;
 using SpoofMessageService.Services.Repositories;
@@ -16,19 +17,25 @@ public class SearchRepository(ICacheService cache,
     public async Task<List<SearchableEntity>> GetChats(string query, Guid userId)
     {
         await using SpoofMessageServiceContext context = await _factory.CreateDbContextAsync();
-        return await context.Users
-            .Where(x => !x.IsDeleted
-                        && (string.Equals(x.Name, query, StringComparison.InvariantCultureIgnoreCase)
-                        || string.Equals(x.Login, query, StringComparison.CurrentCultureIgnoreCase)))
-            .Select(x => new SearchableEntity(x.Id,
-                                              x.Name,
-                                              x.Login))
-            .Union(context.Chats.Where(x =>
-                        !x.IsDeleted
-                        && (string.Equals(x.Name, query, StringComparison.InvariantCultureIgnoreCase)
-                        || string.Equals(x.UniqueName, query, StringComparison.CurrentCultureIgnoreCase)))
-            .Select(x => new SearchableEntity(x.Id,
-                                              x.Name ?? string.Empty,
-                                              x.UniqueName))).ToListAsync();
+        query = $"%{query}%";
+        return await context.Database.SqlQuery<SearchableEntity>(
+            $@"SELECT  c.""Id"", 0 ""Type"", c.""AvatarId"", c.""OriginalFileName"", c.""Name"", c.""UniqueName"" FROM ""Chat"" c where c.""Name"" ILIKE {query} or c.""UniqueName"" ILIKE {query}
+                UNION
+                SELECT  u.""Id"", 1 ""Type"", u.""AvatarId"", u.""OriginalFileName"", u.""Name"", u.""Login"" AS ""UniqueName"" FROM ""User"" u where u.""Name"" ILIKE {query} or u.""Login"" ILIKE {query}")
+        .ToListAsync();
+    }
+
+    public async Task<List<SearchableMessage>> GetMessages(string query, Guid userId)
+    {
+        await using SpoofMessageServiceContext context = await _factory.CreateDbContextAsync();
+        query = $"%{query}%";
+        return await context.Database.SqlQuery<SearchableMessage>(
+            $@"with chats as (
+                select cu.""ChatId"" from ""ChatUser"" cu where cu.""UserId"" = {userId}
+                )
+                SELECT m.""ChatId"", m.""Id"", m.""Text"", m.""SentAt"" from chats c
+                join ""Message"" m on m.""ChatId"" = c.""ChatId"" and m.""Text"" ilike {query}
+                ORDER by  m.""SentAt"" desc")
+        .ToListAsync();
     }
 }

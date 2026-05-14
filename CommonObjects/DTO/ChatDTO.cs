@@ -5,6 +5,9 @@ public record ChatDTO(
         int ChatTypeId,
         string UniqueName,
         string Name,
+        byte[]? AvatarToken,
+        byte[]? AvatarId,
+        string? OriginalAvatarFileName,
         DateTime CreatedAt,
         Guid? OwnerId
     );

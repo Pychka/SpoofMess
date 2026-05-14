@@ -9,7 +9,8 @@ create table "User"
 	"ShowMe" boolean not null default true,
 	"ForwardMessage" boolean not null default true,
 	"InviteMe" boolean not null default true,
-	"IsDeleted" boolean not null default false
+	"IsDeleted" boolean not null default false,
+    "LastModified" timestamptz not null default CURRENT_TIMESTAMP
 );
 
 create table "ChatType"
@@ -529,3 +530,37 @@ return query select distinct on ( rules."PermissionId" ) rules."PermissionId" AS
 end; 
 $$ language plpgsql;
 
+CREATE OR REPLACE FUNCTION "OnceActiveChatAvatar"()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE "ChatAvatar" 
+    SET "IsActive" = FALSE 
+    WHERE "ChatId" = NEW."ChatId" 
+      AND "Id" != NEW."Id" 
+      AND "IsActive" = TRUE;
+    RETURN NEW;
+END;
+$$ LANGUAGE PLPGSQL;
+
+
+CREATE TRIGGER "Trg_ChatAvatar_AfterInsert"
+AFTER INSERT ON "ChatAvatar"
+FOR EACH ROW EXECUTE FUNCTION "OnceActiveChatAvatar"();
+
+
+CREATE OR REPLACE FUNCTION "OnceActiveUserAvatar"()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE "UserAvatar" 
+    SET "IsActive" = FALSE 
+    WHERE "UserId" = NEW."UserId" 
+      AND "Id" != NEW."Id" 
+      AND "IsActive" = TRUE;
+    RETURN NEW;
+END;
+$$ LANGUAGE PLPGSQL;
+
+
+CREATE TRIGGER "Trg_UserAvatar_AfterInsert"
+AFTER INSERT ON "UserAvatar"
+FOR EACH ROW EXECUTE FUNCTION "OnceActiveUserAvatar"();

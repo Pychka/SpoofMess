@@ -8,7 +8,9 @@ public interface IChatAvatarService
 {
     public Task<Result> SetAvatar(SetChatAvatarRequest request, Guid userId);
 
-    public Task<Result<AvatarResponse>> GetAvatar(GetChatAvatarRequest request, Guid userId);
+    public Task<Result<AvatarResponse>> GetAvatar(byte[] accessToken, Guid userId);
+
+    public Task<Result<AvatarResponse>> GetActualAvatar(GetChatAvatarRequest request, Guid userId);
 
     public Task<Result<List<AvatarResponse>>> GetAvatars(GetChatAvatarRequest request, Guid userId);
 

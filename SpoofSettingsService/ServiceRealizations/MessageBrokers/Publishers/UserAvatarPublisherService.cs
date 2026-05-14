@@ -16,7 +16,7 @@ public class UserAvatarPublisherService(
             serializer
         ), IUserAvatarPublisherService
 {
-    protected override string Exchange => "message-service";
+    protected override string Exchange => "settings-service";
 
     public async Task Publish(CreateUserAvatar userAvatar)
     {

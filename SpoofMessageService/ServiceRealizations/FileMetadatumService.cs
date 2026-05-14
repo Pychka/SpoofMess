@@ -2,6 +2,7 @@
 using CommonObjects.DTO;
 using CommonObjects.Results;
 using CommunicationLibrary.Communication;
+using SecurityLibrary;
 using SecurityLibrary.Tokens;
 using SpoofMessageService.Models;
 using SpoofMessageService.Services;
@@ -34,6 +35,19 @@ public class FileMetadatumService(
             if (!result.Success)
                 return Result<FileMetadata>.From(result);
             return Result<FileMetadata>.OkResult(new(_fileTokenService.CreateToken(userId, fileMetadatum!.Id), fileMetadatum!.Id.ToByteArray(), string.Empty, fileMetadatum.Size));
+        }
+        catch (Exception ex)
+        {
+            _loggerService.Error("DataBase error", ex);
+            return Result<FileMetadata>.InternalServerError();
+        }
+    }
+
+    public async Task<Result<FileMetadata>> Get(Attachment attachment, Guid userId)
+    {
+        try
+        {
+            return Result<FileMetadata>.OkResult(new(_fileTokenService.CreateToken(userId, attachment.FileMetadataId), Hasher.GetKey(attachment.FileMetadataId.ToByteArray()), attachment.OriginalFileName, attachment.FileMetadata.Size));
         }
         catch (Exception ex)
         {

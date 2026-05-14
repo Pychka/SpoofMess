@@ -16,7 +16,7 @@ public class CachedIdentifiedFactoryRepository<T, TKey, TDbContext>(
         ), IIdentifiedRepository<T, TKey> where T : IdentifiedEntity<TKey>
     where TDbContext : DbContext
 {
-    public async Task<T?> GetByIdAsync(TKey id)
+    public virtual async Task<T?> GetByIdAsync(TKey id)
     {
         try
         {

@@ -52,8 +52,8 @@ public class UserAvatarValidatorTests
     {
         TheoryData<UserAvatar, int> data = [];
         data.Add(null!, 404);
-        data.Add(new UserAvatar { IsDeleted = true, Key2 = [] }, 400);
-        data.Add(new UserAvatar { IsDeleted = false, Key2 = [] }, 200);
+        data.Add(new UserAvatar { IsDeleted = true, FileId = Guid.Empty }, 400);
+        data.Add(new UserAvatar { IsDeleted = false, FileId = Guid.Empty }, 200);
         return data;
     }
     public static TheoryData<UserAvatar, int> GetAvatar()

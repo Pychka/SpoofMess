@@ -57,16 +57,8 @@ public class CachedSoftDeletableIdentifiedFactoryRepository<T, TKey, TDbContext>
                     x => x.IsDeleted,
                     true)) > 0;
         if (result)
-        {
-            T? entity = await _cache.Get<T>(GetKey(id));
-            if (entity is not null)
-            {
-                entity.IsDeleted = true;
-                SaveToCache(GetKey(id), entity);
-            }
+            await _cache.Delete(GetKey(id));
 
-            return true;
-        }
-        return false;
+        return result;
     }
 }

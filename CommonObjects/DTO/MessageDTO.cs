@@ -7,10 +7,7 @@ public record MessageDTO(
         Guid ChatId,
         string SenderLogin,
         string SenderName,
-        byte[]? UserAvatarToken,
-        byte[]? UserAvatarId,
-        string? OriginalAvatarName,
-        string Text,
+        string? Text,
         DateTime SendAt,
-        List<Attachment> Attachments
+        List<Attachment>? Attachments
     );

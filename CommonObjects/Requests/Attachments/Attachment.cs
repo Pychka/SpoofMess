@@ -2,7 +2,7 @@
 
 public record Attachment(
         byte[] Id,
-        byte[] Token,
+        byte[]? Token,
         string OriginalFileName,
         string Category,
         string? Metadata,

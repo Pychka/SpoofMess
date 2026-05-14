@@ -21,8 +21,8 @@ public class StickerValidatorTests
     {
         TheoryData<Sticker, int> data = [];
         data.Add(null!, 404);
-        data.Add(new Sticker { IsDeleted = true, FileId = [] }, 400);
-        data.Add(new Sticker { IsDeleted = false, FileId = [] }, 200);
+        data.Add(new Sticker { IsDeleted = true, FileId = Guid.Empty }, 400);
+        data.Add(new Sticker { IsDeleted = false, FileId = Guid.Empty }, 200);
         return data;
     }
 }

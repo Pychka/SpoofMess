@@ -2,6 +2,7 @@ using AdditionalHelpers.ServiceRealizations;
 using Microsoft.AspNetCore.Http.Features;
 using SecurityLibrary;
 using SecurityLibrary.Tokens;
+using SecurityLibrary.TokensRealizations;
 using SettingsHelper;
 using SpoofFileParser;
 using SpoofFileParser.FileMetadataParser;
@@ -67,11 +68,11 @@ ParserFactory factory = new(
     new FileMetadataParser());
 JsonSerializerService serializer = new();
 
-builder.Services.AddSingleton<IFileClassifier>(new FileClassifier(factory, await serializer.Deserialize<ExtensionRoadMap[]>(File.OpenRead("startup\\FileExtensions.json"))));
+builder.Services.AddSingleton<IFileClassifier>(new FileClassifier(factory, await serializer.Deserialize<ExtensionRoadMap[]>(File.OpenRead("startup//FileExtensions.json"))));
 
 builder.Services.AddSingleton(
-    builder.Configuration.GetSection("TokenHeader")
-    .Get<TokenHeaderCover>()!);
+    builder.Configuration.GetSection("LivedTokenHeader")
+    .Get<LivedTokenHeaderCover>()!);
 
 WebApplication app = builder.Build();
 

@@ -15,7 +15,7 @@ public abstract class CachedFactoryBaseRepository<T, TDbContext>(
     protected readonly ICacheService _cache = cache;
     protected readonly IDbContextFactory<TDbContext> _factory = factory;
 
-    public async Task AddAsync(T entity)
+    public virtual async Task AddAsync(T entity)
     {
         try
         {
@@ -30,7 +30,7 @@ public abstract class CachedFactoryBaseRepository<T, TDbContext>(
         }
     }
 
-    public async Task DeleteAsync(T entity)
+    public virtual async Task DeleteAsync(T entity)
     {
         try
         {
@@ -45,14 +45,14 @@ public abstract class CachedFactoryBaseRepository<T, TDbContext>(
         }
     }
 
-    public async Task UpdateAsync(T entity)
+    public virtual async Task UpdateAsync(T entity)
     {
         try
         {
             await using DbContext context = await _factory.CreateDbContextAsync();
             context.Set<T>().Update(entity);
             await context.SaveChangesAsync();
-            SaveToCache(GetKey(entity), entity);
+            await _cache.Delete(GetKey(entity));
         }
         catch (Exception ex)
         {
@@ -60,7 +60,7 @@ public abstract class CachedFactoryBaseRepository<T, TDbContext>(
         }
     }
 
-    public async Task UpdateRangeAsync(List<T> entities)
+    public virtual async Task UpdateRangeAsync(List<T> entities)
     {
         try
         {
@@ -75,7 +75,7 @@ public abstract class CachedFactoryBaseRepository<T, TDbContext>(
         }
     }
 
-    protected async ValueTask<T?> GetFromDb(string key, Func<Task<T?>> function)
+    protected virtual async ValueTask<T?> GetFromDb(string key, Func<Task<T?>> function)
     {
         T? entity = await function();
         if (entity is not null)

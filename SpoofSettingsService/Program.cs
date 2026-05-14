@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SecurityLibrary;
 using SecurityLibrary.Tokens;
+using SecurityLibrary.TokensRealizations;
 using SettingsHelper;
 using SpoofSettingsService.Models;
 using SpoofSettingsService.ServiceRealizations;
@@ -35,6 +36,7 @@ builder.Services.AddSingleton<IUserMessageBrokerService, UserPublisherService>()
 builder.Services.AddSingleton<IChatUserPublisherService, ChatUserPublisherService>();
 builder.Services.AddSingleton<IChatPublisherService, ChatPublisherService>();
 builder.Services.AddSingleton<IUserAvatarPublisherService, UserAvatarPublisherService>();
+builder.Services.AddSingleton<IChatAvatarPublisherService, ChatAvatarPublisherService>();
 
 builder.Services.AddHostedService<FileMetadatumConsumerService>();
 builder.Services.AddHostedService<UserConsumerService>();
@@ -74,6 +76,10 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRuleService, RuleService>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddTransient<IFileTokenService, FileTokenService>();
+builder.Services.AddTransient<IAttachmentAccessTokenService, AttachmentAccessTokenService>();
+builder.Services.AddSingleton(
+    builder.Configuration.GetSection("TokenHeader")
+    .Get<LivedTokenHeaderCover>()!);
 builder.Services.AddSingleton(
     builder.Configuration.GetSection("TokenHeader")
     .Get<TokenHeaderCover>()!);

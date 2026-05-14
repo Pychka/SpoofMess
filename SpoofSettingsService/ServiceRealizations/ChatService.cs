@@ -4,6 +4,8 @@ using CommonObjects.Requests;
 using CommonObjects.Requests.Changes;
 using CommonObjects.Results;
 using RuleRoleHelper;
+using SecurityLibrary;
+using SecurityLibrary.Tokens;
 using SpoofSettingsService.Models;
 using SpoofSettingsService.Services;
 using SpoofSettingsService.Services.MessageBrokers;
@@ -20,7 +22,8 @@ public class ChatService(
         IChatValidator chatValidator,
         IUserService userService,
         IRuleService ruleService,
-        ILoggerService loggerService
+        ILoggerService loggerService,
+        IFileTokenService fileTokenService
     ) : IChatService
 {
     private readonly IChatValidator _chatValidator = chatValidator;
@@ -29,6 +32,7 @@ public class ChatService(
     private readonly IChatTypeService _chatTypeService = chatTypeService;
     private readonly IRuleService _ruleService = ruleService;
     private readonly ILoggerService _loggerService = loggerService;
+    private readonly IFileTokenService _fileTokenService = fileTokenService;
     private readonly IChatPublisherService _chatPublisherService = chatPublisherService;
 
     public async ValueTask<Result> ChangeSettings(ChangeChatSettingsRequest request, Guid userId)
@@ -101,7 +105,7 @@ public class ChatService(
                     newChat.Name
                     )
                 );
-            return Result<ChatDTO>.OkResult(newChat.Set());
+            return Result<ChatDTO>.OkResult(newChat.Set(null, null));
         }
         catch (Exception ex)
         {
@@ -132,7 +136,7 @@ public class ChatService(
     {
         try
         {
-            Chat? chat = await _chatRepository.GetByIdAsync(chatId);
+            Chat? chat = await _chatRepository.GetAsync(chatId);
             Result result = _chatValidator.IsAvailable(chat);
             if(!result.Success)
                 return Result<Chat>.From(result);
@@ -172,6 +176,35 @@ public class ChatService(
         {
             _loggerService.Error("Database error", ex);
             return Result<ChatWithOwner>.ErrorResult("Database error");
+        }
+    }
+
+    public async Task<Result<ChatDTO>> GetChat(Guid userId, Guid chatId)
+    {
+        try
+        {
+            Result<Chat> result = await Get(chatId);
+            if (!result.Success)
+                return Result<ChatDTO>.From(result);
+
+            return Result<ChatDTO>.OkResult(new(
+                    result.Body!.Id,
+                    result.Body.ChatTypeId,
+                    result.Body.UniqueName,
+                    result.Body.Name,
+                    result.Body.ActualAvatar is null ? null :
+                    _fileTokenService.CreateToken(userId, result.Body.ActualAvatar.FileId),
+                    result.Body.ActualAvatar is null ? null :
+                    Hasher.GetKey(result.Body.ActualAvatar.FileId.ToByteArray()),
+                    result.Body.ActualAvatar?.OriginalFileName,
+                    result.Body.CreatedAt,
+                    result.Body.OwnerId
+                ));
+        }
+        catch (Exception ex)
+        {
+            _loggerService.Error("Database error", ex);
+            return Result<ChatDTO>.ErrorResult("Database error");
         }
     }
 }

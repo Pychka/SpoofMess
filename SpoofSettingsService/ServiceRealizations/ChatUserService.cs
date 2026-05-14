@@ -157,8 +157,8 @@ public class ChatUserService(
             {
                 if (chatUser.FileId is null)
                     continue;
-                chatUser.ChatAvatarToken = _fileTokenService.CreateToken(userId, chatUser.FileId.Value);
-                chatUser.ChatAvatarId = Hasher.GetKey(chatUser.FileId.Value.ToByteArray());
+                chatUser.AvatarFileToken = _fileTokenService.CreateToken(userId, chatUser.FileId.Value);
+                chatUser.AvatarId = Hasher.GetKey(chatUser.FileId.Value.ToByteArray());
             }
             return Result<List<ChatUserDTO>>.OkResult(chats);
         }

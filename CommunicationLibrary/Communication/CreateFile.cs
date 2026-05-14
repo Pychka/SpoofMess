@@ -3,5 +3,6 @@
 public record CreateFile(
         Guid FileId,
         long Size,
-        string Category
+        string Category,
+        string? Metadata
     );

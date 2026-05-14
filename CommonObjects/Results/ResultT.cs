@@ -2,7 +2,7 @@
 
 namespace CommonObjects.Results;
 
-public class Result<T>
+public class Result<T> : IDisposable, IAsyncDisposable
 {
     public bool Success { get; set; }
 
@@ -63,7 +63,7 @@ public class Result<T>
     {
         return statusCode switch
         {
-            200 => OkResult(body),
+            200 => OkResult(body ?? throw new NullReferenceException("Body can't be empty if statusCode success. Use Result if you don't need send body with response")),
             400 => BadRequest(message ?? ""),
             401 => UnAuthorized(message ?? ""),
             403 => Forbidden(message ?? ""),
@@ -71,5 +71,19 @@ public class Result<T>
             500 => ErrorResult(message ?? ""),
             _ => throw new InvalidOperationException(message),
         };
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (Body is IAsyncDisposable asyncDisposable)
+            await asyncDisposable.DisposeAsync();
+        GC.SuppressFinalize(this);
+    }
+
+    public void Dispose()
+    {
+        if (Body is IDisposable disposable)
+            disposable.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

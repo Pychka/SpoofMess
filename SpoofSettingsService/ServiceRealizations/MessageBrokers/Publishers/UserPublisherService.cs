@@ -17,7 +17,11 @@ public class UserPublisherService(
             serializer
         ), IUserMessageBrokerService
 {
-    protected override string Exchange => "entrance-service";
+    protected override string Exchange => "settings-service";
+
+
+    public async Task ConfirmUpdate(UpdateUser updateUser) =>
+        await Publish("user.success.updated", updateUser);
 
     public async Task ConfirmCreate(CreateUser createUser) =>
         await Publish("user.success.created", createUser);

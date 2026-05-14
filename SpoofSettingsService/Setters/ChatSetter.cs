@@ -14,12 +14,15 @@ public static class ChatSetter
         chat.UniqueName = request.UniqueName ?? chat.UniqueName;
     }
 
-    public static ChatDTO Set(this Chat chat) =>
+    public static ChatDTO Set(this Chat chat, byte[]? avatarToken, byte[]? avatarId) =>
         new(
             chat.Id,
             chat.ChatTypeId,
             chat.UniqueName,
             chat.Name,
+            avatarToken,
+            avatarId,
+            chat.ActualAvatar?.OriginalFileName,
             chat.CreatedAt,
             chat.OwnerId
             );

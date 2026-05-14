@@ -12,7 +12,7 @@ public class UserEntryValidatorTests
     {
         UserEntryValidator sut = new();
 
-        Result result = sut.IsActive(user);
+        Result result = sut.IsAvailable(user);
 
         Assert.Equal(statusCode, result.StatusCode);
     }

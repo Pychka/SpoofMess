@@ -17,7 +17,7 @@ public class CachedDoubleIdentifiedFactoryRepository<T, TKey1, TKey2, TDbContext
     where T : DoubleIdentifiedEntity<TKey1, TKey2>
     where TDbContext : DbContext
 {
-    public async Task<T?> GetByIdAsync(TKey1 key1, TKey2 key2)
+    public virtual async Task<T?> GetByIdAsync(TKey1 key1, TKey2 key2)
     {
         try
         {

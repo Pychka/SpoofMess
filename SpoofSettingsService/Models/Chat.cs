@@ -1,4 +1,5 @@
 ﻿using DataSaveHelpers.EntityTypesRealizations.Identified;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SpoofSettingsService.Models;
 
@@ -17,6 +18,9 @@ public partial class Chat : IdentifiedSoftDeletableChangeableEntity<Guid>
     public long? BaseRoleId { get; set; }
 
     public virtual ChatRole? BaseRole { get; set; }
+
+    [NotMapped]
+    public ChatAvatar? ActualAvatar => ChatAvatars.FirstOrDefault(x => x.IsActive);
 
     public virtual ICollection<ChatAvatar> ChatAvatars { get; set; } = [];
 

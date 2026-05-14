@@ -10,4 +10,6 @@ public interface IChatUserRepository : IDoubleIdentifiedRepository<ChatUser, Gui
     public Task<List<ChatUser>> GetManyByChatId(Guid chatId);
 
     public Task<List<ChatUser>> GetManyByUserId(Guid userId);
+
+    public Task<ChatUser?> GetById(Guid chatId, Guid userId);
 }

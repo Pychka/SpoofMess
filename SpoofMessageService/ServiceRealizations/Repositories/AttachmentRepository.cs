@@ -15,4 +15,19 @@ public class AttachmentRepository(
         factory,
         processQueueTasks), IAttachmentRepository
 {
+    public override async Task<Attachment?> GetByIdAsync(Guid id)
+    {
+        try
+        {
+            Attachment? entity = await _cache.Get<Attachment>(GetKey(id));
+            await using SpoofMessageServiceContext context = await _factory.CreateDbContextAsync();
+            entity ??= await context.Attachments.Include(x => x.Message).Include(x => x.FileMetadata).FirstOrDefaultAsync(x => x.Id!.Equals(id));
+
+            return entity;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("DataBase error", ex);
+        }
+    }
 }

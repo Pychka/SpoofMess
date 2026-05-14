@@ -2,6 +2,7 @@ using RuleRoleHelper.ServiceRealizations;
 using RuleRoleHelper.Services;
 using SecurityLibrary;
 using SecurityLibrary.Tokens;
+using SecurityLibrary.TokensRealizations;
 using SettingsHelper;
 using SpoofMessageService;
 using SpoofMessageService.Models;
@@ -42,10 +43,12 @@ builder.Services.AddScoped<IAttachmentService, AttachmentService>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IFileMetadatumService, FileMetadatumService>();
 
+builder.Services.AddScoped<IAttachmentValidator, AttachmentValidator>();
 builder.Services.AddScoped<IUserValidator, UserValidator>();
 builder.Services.AddScoped<IMessageValidator, MessageValidator>();
 builder.Services.AddScoped<IChatUserValidator, ChatUserValidator>();
 builder.Services.AddScoped<IRuleParserService, RuleParserService>();
+builder.Services.AddScoped<IChatValidator, ChatValidator>();
 builder.Services.AddScoped<IFileMetadatumValidator, FileMetadatumValidator>();
 
 builder.Services.AddScoped<IRuleService, RuleService>();
@@ -58,11 +61,16 @@ builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 builder.Services.AddScoped<IChatRepository, ChatRepository>();
 builder.Services.AddScoped<IAttachmentRepository, AttachmentRepository>();
 builder.Services.AddTransient<IFileTokenService, FileTokenService>();
+builder.Services.AddTransient<IAttachmentAccessTokenService, AttachmentAccessTokenService>();
 
 builder.Services.AddSingleton<IUserEventService, UserEventService>();
 builder.Services.AddSingleton<IMessageEventService, MessageEventService>();
 builder.Services.AddSingleton<IChatEventService, ChatEventService>();
+builder.Services.AddSingleton<ConnectionTracker>();
 
+builder.Services.AddSingleton(
+    builder.Configuration.GetSection("TokenHeader")
+    .Get<LivedTokenHeaderCover>()!);
 builder.Services.AddSingleton(
     builder.Configuration.GetSection("TokenHeader")
     .Get<TokenHeaderCover>()!);

@@ -5,6 +5,7 @@ namespace SpoofMessageService.Services.Repositories;
 
 public interface IMessageRepository : ISoftDeletableIdentifiedRepository<Message, Guid>
 {
+    public Task<int> GetCount();
     public Task UploadAttachments(Message message);
 
     public Task<List<Message>> GetMessagesAfterDate(
@@ -24,4 +25,7 @@ public interface IMessageRepository : ISoftDeletableIdentifiedRepository<Message
             DateTime after,
             int take = 50
         );
+    public Task Save(Message message);
+
+    public Task Update(Message message);
 }

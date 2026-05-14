@@ -17,6 +17,29 @@ public class MessageRepository(
             processQueueTasks
         ), IMessageRepository
 {
+    public async Task<int> GetCount()
+    {
+        await using SpoofMessageServiceContext context = await _factory.CreateDbContextAsync();
+        return context.Messages.Where(x => !x.IsDeleted).Count();
+    }
+
+    public async Task Save(Message message)
+    {
+        await using SpoofMessageServiceContext context = await _factory.CreateDbContextAsync();
+        foreach (Attachment attachment in message.Attachments)
+            context.Attach(attachment);
+        await context.Messages.AddAsync(message);
+        await context.SaveChangesAsync();
+    }
+    public async Task Update(Message message)
+    {
+        await using SpoofMessageServiceContext context = await _factory.CreateDbContextAsync();
+        foreach (Attachment attachment in message.Attachments)
+            context.Attach(attachment);
+        context.Messages.Update(message);
+        await context.SaveChangesAsync();
+    }
+
     public async Task<List<Message>> GetMessagesAfterDate(
             Guid chatId,
             DateTime after,
@@ -24,7 +47,7 @@ public class MessageRepository(
         )
     {
         await using SpoofMessageServiceContext context = await _factory.CreateDbContextAsync();
-        return await context.Messages.OrderByDescending(x => x.SentAt)
+        return await context.Messages.OrderBy(x => x.SentAt)
             .Include(x => x.User)
             .Include(x => x.Attachments)
             .ThenInclude(x => x.FileMetadata)
@@ -60,7 +83,7 @@ public class MessageRepository(
         )
     {
         await using SpoofMessageServiceContext context = await _factory.CreateDbContextAsync();
-        return await context.Messages
+        return await context.Messages.OrderBy(x => x.SentAt)
             .Include(x => x.User)
             .Include(x => x.Attachments)
             .ThenInclude(x => x.FileMetadata)

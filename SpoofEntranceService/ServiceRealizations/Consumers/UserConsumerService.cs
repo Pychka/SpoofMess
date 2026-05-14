@@ -20,7 +20,7 @@ public class UserConsumerService(
         ), IUserConsumerService
 {
     protected readonly IInjectionService _injectionService = injectionService;
-    protected override string Exchange => "entrance-service";
+    protected override string Exchange => "settings-service";
     protected override string BaseQueueName => "entrance.user";
 
 

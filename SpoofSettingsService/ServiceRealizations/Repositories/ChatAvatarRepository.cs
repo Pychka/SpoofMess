@@ -16,6 +16,16 @@ public class ChatAvatarRepository(
         tasksService
     ), IChatAvatarRepository
 {
+    public override async Task<ChatAvatar?> GetByIdAsync(Guid id)
+    {
+        await using SpoofSettingsServiceContext context = await _factory.CreateDbContextAsync();
+        return await GetAsync(
+                GetKey(id),
+                async () => await context.ChatAvatars.Include(x => x.File).FirstOrDefaultAsync(x =>
+                x.Id == id)
+            );
+    }
+
     public async Task<ChatAvatar?> GetActualChatAvatarById(Guid chatId)
     {
         await using SpoofSettingsServiceContext context = await _factory.CreateDbContextAsync();

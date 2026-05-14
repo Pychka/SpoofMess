@@ -88,5 +88,15 @@
         "DebugTarget": "https"
       }
     ]
+  },
+  {
+    "Name": "SFS",
+    "Projects": [
+      {
+        "Path": "SpoofFileService\\SpoofFileService.csproj",
+        "Action": "Start",
+        "DebugTarget": "Container (Dockerfile)"
+      }
+    ]
   }
 ]

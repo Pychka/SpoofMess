@@ -3,6 +3,7 @@ using CommonObjects.DTO;
 using CommonObjects.Requests.Changes;
 using CommonObjects.Results;
 using CommunicationLibrary.Communication;
+using SecurityLibrary;
 using SecurityLibrary.Tokens;
 using SpoofSettingsService.Models;
 using SpoofSettingsService.Services;
@@ -53,14 +54,17 @@ public class UserService(
             if (!result.Success) 
                 return Result<UserDTO>.From(result);
 
-            Guid? avatarId = user!.UserAvatars.FirstOrDefault(a => a.IsActive)?.FileId;
+            UserAvatar? avatar = user!.UserAvatars.FirstOrDefault(a => a.IsActive);
             return Result<UserDTO>.OkResult(
-                user.Set(avatarId is null
+                user.Set(avatar is null
                     ? null
                     : _fileTokenService.CreateToken(
-                        requesterId, 
-                        avatarId.Value)
-                    )
+                        requesterId,
+                        avatar.Id),
+                    avatar is null
+                    ? null
+                    : Hasher.GetKey(avatar.Id.ToByteArray()),
+                    avatar?.OriginalFileName)
                 );
         }
         catch (Exception ex)
@@ -80,6 +84,8 @@ public class UserService(
             if (!result.Success) return result;
 
             user!.Set(request);
+            await _userRepository.UpdateAsync(user!);
+            await _userMessageBrokerService.ConfirmUpdate(new(user!.Id, user.Name, user.Login, user.LastModified));
             return Result.OkResult();
         }
         catch (Exception ex)

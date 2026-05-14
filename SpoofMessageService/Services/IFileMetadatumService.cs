@@ -10,5 +10,6 @@ public interface IFileMetadatumService
     public Task<Result<FileMetadata>> Get(Guid fileId, Guid userId);
     public Task<Result<FileMetadatum>> Get(Guid fileId);
     public Task<Result> Save(CreateFile createFile);
+    public Task<Result<FileMetadata>> Get(Attachment attachment, Guid userId);
     public Task<Result> Delete(DeleteFile deleteFile);
 }

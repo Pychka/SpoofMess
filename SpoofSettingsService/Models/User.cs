@@ -20,6 +20,8 @@ public partial class User : IdentifiedSoftDeletableEntity<Guid>
 
     public bool InviteMe { get; set; }
 
+    public DateTime LastModified { get; set; }
+
     public virtual ICollection<ChatUser> ChatUsers { get; set; } = [];
 
     public virtual ICollection<Chat> Chats { get; set; } = [];

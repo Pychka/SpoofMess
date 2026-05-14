@@ -17,7 +17,7 @@ public class CachedSoftDeletableDoubleIdentifiedFactoryRepository<T, TKey1, TKey
     where T : DoubleIdentifiedSoftDeletable<TKey1, TKey2>
     where TDbContext : DbContext
 {
-    public async Task SoftDeleteAsync(T entity)
+    public virtual async Task SoftDeleteAsync(T entity)
     {
         try
         {
@@ -33,7 +33,7 @@ public class CachedSoftDeletableDoubleIdentifiedFactoryRepository<T, TKey1, TKey
         }
     }
 
-    public async Task<bool> SoftDeleteAsync(TKey1 key1, TKey2 key2)
+    public virtual async Task<bool> SoftDeleteAsync(TKey1 key1, TKey2 key2)
     {
         try
         {

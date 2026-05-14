@@ -367,6 +367,7 @@ public partial class SpoofSettingsServiceContext : DbContext
             entity.Property(e => e.SearchMe).HasDefaultValue(true);
             entity.Property(e => e.ShowMe).HasDefaultValue(true);
             entity.Property(e => e.WasOnline).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.LastModified).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
         modelBuilder.Entity<UserAvatar>(entity =>
@@ -379,11 +380,11 @@ public partial class SpoofSettingsServiceContext : DbContext
             entity.Property(e => e.LastModified).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.HasOne(d => d.File).WithMany(p => p.UserAvatars)
-                .HasForeignKey(d => d.UserId)
+                .HasForeignKey(d => d.FileId)
                 .HasConstraintName("FK_UserAvatar_FileId");
 
             entity.HasOne(d => d.User).WithMany(p => p.UserAvatars)
-                .HasForeignKey(d => d.FileId)
+                .HasForeignKey(d => d.UserId)
                 .HasConstraintName("FK_UserAvatar_UserId");
         });
 

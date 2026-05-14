@@ -1,10 +1,16 @@
 ﻿using AdditionalHelpers.Services;
+using System.Collections.Concurrent;
+using System.Drawing;
 using System.Runtime.CompilerServices;
 
 namespace AdditionalHelpers.ServiceRealizations;
 
-public class ConsoleLoggerService(LogLevel minLogLevel) : BaseLogService(minLogLevel), ILoggerService
+public class ConsoleLoggerService : BaseLogService, ILoggerService, IDisposable
 {
+    private readonly BlockingCollection<LogEntry> entries = [];
+    private readonly CancellationTokenSource tokenSource = new();
+    private bool canWrite = true;
+
     private readonly List<LogColor> colors = [
             new(LogLevel.Fatal, ConsoleColor.DarkYellow),
             new(LogLevel.Critical, ConsoleColor.Red),
@@ -15,13 +21,17 @@ public class ConsoleLoggerService(LogLevel minLogLevel) : BaseLogService(minLogL
             new(LogLevel.Trace, ConsoleColor.Gray),
         ];
 
+    public ConsoleLoggerService(LogLevel minLogLevel) : base(minLogLevel)
+    {
+        Task.Run(Consume, tokenSource.Token);
+    }
+
     public override void Log(LogLevel level, string message, Exception? exception = null, [CallerMemberName] string caller = "", [CallerLineNumber] int callerLineNumber = 0, [CallerFilePath] string callerFile = "")
     {
-        ConsoleColor color = colors.FirstOrDefault(x => x.LogLevel == level)?.Color ?? ConsoleColor.Blue;
+        if (!canWrite)
+            return;
         LogEntry logEntry = Format(level, message, exception, caller, callerLineNumber, callerFile);
-        ColorPrint(CheckFile(LogLevel.Debug) ? logEntry.Caller : "", color, true);
-        ColorPrint(logEntry.PrintInfo(), color, false);
-        Console.WriteLine(logEntry.PrintMessage((int)_minLogLevel < 2));
+        entries.Add(logEntry);
     }
 
     private static void ColorPrint(string message, ConsoleColor color, bool newLine = false)
@@ -33,5 +43,26 @@ public class ConsoleLoggerService(LogLevel minLogLevel) : BaseLogService(minLogL
         else
             Console.Write(message);
         Console.ForegroundColor = lastColor;
+    }
+
+    private void Consume()
+    {
+        ConsoleColor color;
+        foreach (LogEntry logEntry in entries.GetConsumingEnumerable())
+        {
+            color = colors.FirstOrDefault(x => x.LogLevel == logEntry.Level)?.Color ?? ConsoleColor.Blue;
+            ColorPrint(CheckFile(LogLevel.Debug) ? logEntry.Caller : "", color, true);
+            ColorPrint(logEntry.PrintInfo(), color, false);
+            Console.WriteLine(logEntry.PrintMessage((int)_minLogLevel < 2));
+        }
+    }
+
+    public void Dispose()
+    {
+        canWrite = false;
+        while (entries.Count > 0) ;
+
+        tokenSource.Cancel();
+        GC.SuppressFinalize(this);
     }
 }

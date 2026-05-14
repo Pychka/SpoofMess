@@ -36,9 +36,9 @@ public class UserAvatarConsumerService(
     {
         await ConsumeFromQueueAsync<CreateUserAvatar>("success.created", "userAvatar.success.created", async (createUserAvatar) =>
         {
-            await _injectionService.Invoke<IUserAvatarService, Task<Result>>(async (chatService) =>
+            await _injectionService.Invoke<IUserAvatarService, Task<Result>>(async (userAvatarService) =>
             {
-                return await chatService.Create(createUserAvatar);
+                return await userAvatarService.Create(createUserAvatar);
             });
         });
     }

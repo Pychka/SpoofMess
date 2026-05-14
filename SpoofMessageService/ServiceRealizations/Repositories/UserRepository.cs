@@ -16,6 +16,11 @@ public class UserRepository(
         processQueueTasks
         ), IUserRepository
 {
+    public async Task<int> GetCountActiveUsers()
+    {
+        await using SpoofMessageServiceContext context = await _factory.CreateDbContextAsync();
+        return context.Users.Where(x => x.IsConnected).Count();
+    }
     public async Task<bool> ExecuteUpdateAvatar(Guid userId, Guid fileId, string originalFileName)
     {
         await using SpoofMessageServiceContext context = await _factory.CreateDbContextAsync();
